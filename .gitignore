@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+
+# The database is created at runtime from schema + seed.json; never commit it.
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+.env
