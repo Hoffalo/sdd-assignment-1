@@ -86,8 +86,7 @@ legend { font-size: 1.1rem; text-transform: uppercase; letter-spacing: .03em; ma
 .field { margin-bottom: 14px; }
 .field label, .field .label { display: block; font-weight: 700; }
 .field .help { display: block; font-size: .9rem; color: #555; }
-.field input[type=text], .field input[type=email], .field input[type=url], .field input[type=date],
-.field input[type=password], .field select, .field textarea {
+.field input:not([type=checkbox]):not([type=radio]), .field select, .field textarea {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid #c4c4c4;

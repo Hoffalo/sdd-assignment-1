@@ -26,7 +26,7 @@
      prazo curto em <strong>{{ percent(dashboard.rush_share) }}</strong> ·
      entregues no prazo: <strong>{{ percent(dashboard.on_time_rate) }}</strong> ·
      taxa de resposta das avaliações: <strong>{{ percent(dashboard.response_rate) }}</strong> ·
-     briefing médio: <strong>{{ number(dashboard.average_score) }}%</strong></p>
+     briefing médio: <strong>{{ "—" if dashboard.average_score is none else number(dashboard.average_score) ~ "%" }}</strong></p>
 </section>
 
 <section class="card">
