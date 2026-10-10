@@ -135,10 +135,13 @@ class StatusCommandFactory:
         self._clock = clock
         self._factory_map = {action.name: action for action in ACTIONS}
 
-    def create(self, action_name: str, request: Request, actor: str, note: str = "", **inputs) -> StatusChange:
+    def create(self, action_name: str, request: Request, actor: str, note: str = "",
+               as_requester: bool = False, **inputs) -> StatusChange:
         action = self._factory_map.get(action_name)
         if action is None or request.status not in action.sources:
             raise TransitionNotAllowed(f"{action_name!r} is not allowed from {request.status}")
+        if action.by_requester != as_requester:
+            raise TransitionNotAllowed(f"{action_name!r} cannot be performed by this actor")
         return action.command(self._receiver, self._clock, request, action.target, actor, note, **inputs)
 
     def available_actions(self, status: Status) -> list[Action]:
