@@ -1,0 +1,71 @@
+{% from "_macros.html" import csrf, error, question, text_field %}
+<form method="post" action="{{ action }}" id="briefing-form" data-deadline-url="{{ url_for('public.deadline_check') }}" novalidate>
+  {{ csrf() }}
+
+  <div class="sticky-score" aria-live="polite">
+    <span>Briefing completo: <strong id="score-value">—</strong></span>
+    <div class="meter"><span id="score-bar" style="width: 0"></span></div>
+  </div>
+
+  {% if errors %}
+    <p class="notice notice-error">Faltam algumas informações. Os campos marcados abaixo precisam de atenção.</p>
+  {% endif %}
+
+  <fieldset>
+    <legend>Quem está pedindo</legend>
+    {{ text_field("requester_name", "Seu nome", briefing.requester_name, errors) }}
+    {{ text_field("requester_email", "Seu e-mail @gobrasa.org", briefing.requester_email, errors, type="email") }}
+    <div class="field{% if errors.get('diretoria_id') %} has-error{% endif %}">
+      <label for="diretoria_id" class="required">Sua diretoria</label>
+      <select id="diretoria_id" name="diretoria_id">
+        <option value="">Escolha…</option>
+        {% for diretoria in catalog.diretorias %}
+          <option value="{{ diretoria.id }}"{% if diretoria.id == briefing.diretoria_id %} selected{% endif %}>{{ diretoria.name }}</option>
+        {% endfor %}
+      </select>
+      {{ error(errors, "diretoria_id") }}
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>O vídeo</legend>
+    <div class="field{% if errors.get('type_code') %} has-error{% endif %}">
+      <span class="label required">Que tipo de vídeo?</span>
+      <div class="options">
+        {% for type in catalog.types %}
+          <label><input type="radio" name="type_code" value="{{ type.code }}" data-detail-label="{{ type.detail_label or '' }}"
+                        {% if type.code == briefing.type_code %} checked{% endif %}> {{ type.label }}</label>
+        {% endfor %}
+      </div>
+      {{ error(errors, "type_code") }}
+    </div>
+    <div class="field{% if errors.get('type_detail') %} has-error{% endif %}" id="type-detail-field">
+      <label for="type_detail" class="required" id="type-detail-label">Conte mais sobre o tipo</label>
+      <input id="type_detail" name="type_detail" value="{{ briefing.type_detail }}">
+      {{ error(errors, "type_detail") }}
+    </div>
+    {{ text_field("title", "Título do pedido", briefing.title, errors, help="Um nome curto para todo mundo saber de qual vídeo estamos falando.") }}
+    {{ text_field("campaign", "Campanha", briefing.campaign, errors, required=False, help="A qual campanha, conferência ou produto da BRASA o vídeo pertence?") }}
+    <div class="field">
+      <label><input type="checkbox" name="for_conference" value="sim"{% if briefing.for_conference %} checked{% endif %}>
+        É conteúdo de conferência (passa pela revisão do COO)</label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Prazo</legend>
+    {{ text_field("needed_by", "Para quando você precisa do vídeo pronto?", briefing.needed_by.isoformat() if briefing.needed_by else "", errors, type="date") }}
+    {{ text_field("needed_by_reason", "Por que essa data?", briefing.needed_by_reason, errors, help="Ex.: abertura das inscrições, dia da conferência.") }}
+    <div id="deadline-notice" class="notice" hidden></div>
+    {{ text_field("rush_reason", "Se o prazo for curto, por que ele não pode mudar?", briefing.rush_reason, errors, type="textarea", required=False) }}
+  </fieldset>
+
+  {% for section in sections %}
+    <fieldset data-type="{{ section.type_code or '' }}">
+      <legend>{{ section.title }}</legend>
+      {% for q in section.questions %}{{ question(q, briefing, errors, prefix) }}{% endfor %}
+    </fieldset>
+  {% endfor %}
+
+  <button type="submit">Enviar briefing</button>
+</form>

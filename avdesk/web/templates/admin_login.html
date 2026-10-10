@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}Entrar{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Área da gerência de Audiovisual</h1>
+  <form method="post">
+    {{ csrf() }}
+    <div class="field{% if error %} has-error{% endif %}">
+      <label for="password">Senha</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" autofocus>
+      {% if error %}<span class="error">{{ error }}</span>{% endif %}
+    </div>
+    <button type="submit">Entrar</button>
+  </form>
+</section>
+{% endblock %}

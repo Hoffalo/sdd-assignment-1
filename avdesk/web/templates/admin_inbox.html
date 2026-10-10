@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}Caixa de entrada{% endblock %}
+{% block content %}
+<h1>Pedidos</h1>
+
+<section class="card">
+  <h3>Carga por pessoa</h3>
+  <p>
+    {% for analyst in catalog.analysts %}
+      {% set open_count = workload[analyst.id] %}
+      <span class="badge{% if open_count > threshold %} badge-rush{% endif %}">{{ analyst.name }}: {{ open_count }}</span>
+    {% endfor %}
+  </p>
+</section>
+
+<form class="filters" method="get">
+  <div class="field">
+    <label for="status">Status</label>
+    <select id="status" name="status">
+      <option value="">Todos</option>
+      {% for status in statuses %}<option value="{{ status.value }}"{% if current.get('status') == status.value %} selected{% endif %}>{{ status.label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label for="type_code">Tipo</label>
+    <select id="type_code" name="type_code">
+      <option value="">Todos</option>
+      {% for type in catalog.types %}<option value="{{ type.code }}"{% if current.get('type_code') == type.code %} selected{% endif %}>{{ type.label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label for="diretoria_id">Diretoria</label>
+    <select id="diretoria_id" name="diretoria_id">
+      <option value="">Todas</option>
+      {% for d in catalog.diretorias %}<option value="{{ d.id }}"{% if current.get('diretoria_id') == d.id|string %} selected{% endif %}>{{ d.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label for="analyst_id">Responsável</label>
+    <select id="analyst_id" name="analyst_id">
+      <option value="">Todos</option>
+      {% for a in catalog.analysts %}<option value="{{ a.id }}"{% if current.get('analyst_id') == a.id|string %} selected{% endif %}>{{ a.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="button-secondary">Filtrar</button>
+</form>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Código</th><th>Título</th><th>Tipo</th><th>Diretoria</th><th>Prazo</th><th>Status</th><th>Briefing</th></tr></thead>
+    <tbody>
+      {% for r in requests %}
+        <tr>
+          <td><a href="{{ url_for('admin.detail', request_id=r.id) }}">{{ r.public_code }}</a></td>
+          <td>{{ r.briefing.title }}</td>
+          <td>{{ catalog.type(r.briefing.type_code).label }}</td>
+          <td>{{ catalog.diretoria(r.briefing.diretoria_id).name }}</td>
+          <td>{{ r.briefing.needed_by.strftime("%d/%m/%Y") }}{% if r.rush %} <span class="badge badge-rush">curto</span>{% endif %}</td>
+          <td>{{ status_badge(r.status) }}</td>
+          <td>{{ r.briefing_score }}%</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7">Nenhum pedido com esses filtros.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

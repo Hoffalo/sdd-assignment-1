@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}{{ tracked.public_code }}{% endblock %}
+{% block content %}
+<p class="help">{{ tracked.public_code }}</p>
+<h1>{{ tracked.briefing.title }}</h1>
+<p>{{ status_badge(tracked.status) }}
+  {% if tracked.rush %}<span class="badge badge-rush">Prazo curto</span>{% endif %}</p>
+
+<section class="card">
+  <p><strong>Prazo pedido:</strong> {{ tracked.briefing.needed_by.strftime("%d/%m/%Y") }}</p>
+  {% set analyst = catalog.analyst(tracked.analyst_id) %}
+  {% if analyst %}<p><strong>Responsável:</strong> {{ analyst.name }}</p>{% endif %}
+  {% if tracked.delivery_url %}<p><strong>Entrega:</strong> <a href="{{ tracked.delivery_url }}" rel="noopener">abrir o vídeo final</a></p>{% endif %}
+  <p class="help">Guarde o link desta página: só quem tem o link consegue ver o pedido.</p>
+</section>
+
+<h2>Histórico</h2>
+<ol class="timeline">
+  {% for event in timeline %}
+    <li>
+      <time>{{ event.created_at.strftime("%d/%m/%Y %H:%M") }}</time> · {{ event.to_status.label }}
+      {% if event.note %}<br>{{ event.note }}{% endif %}
+    </li>
+  {% endfor %}
+</ol>
+
+{% if editable %}
+  <h2>Complete o briefing</h2>
+  <p class="notice">A gerência de Audiovisual precisa de mais informações. Atualize o briefing abaixo e envie de novo.</p>
+  {% include "_briefing_fields.html" %}
+{% endif %}
+{% endblock %}
+{% block scripts %}{% if editable %}<script src="{{ url_for('static', filename='js/briefing.js') }}"></script>{% endif %}{% endblock %}

@@ -1,0 +1,61 @@
+{% macro error(errors, name) -%}
+  {% if errors.get(name) %}<span class="error" id="{{ name }}-error">{{ errors[name] }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro status_badge(status) -%}
+  <span class="badge badge-{{ status.value }}">{{ status.label }}</span>
+{%- endmacro %}
+
+{% macro csrf() -%}
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{%- endmacro %}
+
+{% macro question(q, briefing, errors, prefix) -%}
+  {% set name = prefix ~ q.key %}
+  {% set value = briefing.answers.get(q.key, "") %}
+  <div class="field{% if errors.get(q.key) %} has-error{% endif %}" data-question="{{ q.key }}">
+    {% if q.kind in ("multichoice", "yesno") %}
+      <span class="label{% if q.required %} required{% endif %}">{{ q.label }}</span>
+    {% else %}
+      <label for="{{ name }}"{% if q.required %} class="required"{% endif %}>{{ q.label }}</label>
+    {% endif %}
+    {% if q.help %}<span class="help">{{ q.help }}</span>{% endif %}
+
+    {% if q.kind == "textarea" %}
+      <textarea id="{{ name }}" name="{{ name }}">{{ value }}</textarea>
+    {% elif q.kind == "choice" %}
+      <select id="{{ name }}" name="{{ name }}">
+        <option value="">Escolha…</option>
+        {% for option in q.options %}<option{% if option == value %} selected{% endif %}>{{ option }}</option>{% endfor %}
+      </select>
+    {% elif q.kind == "multichoice" %}
+      <div class="options">
+        {% for option in q.options %}
+          <label><input type="checkbox" name="{{ name }}" value="{{ option }}"{% if option in value %} checked{% endif %}> {{ option }}</label>
+        {% endfor %}
+      </div>
+    {% elif q.kind == "yesno" %}
+      <div class="options">
+        <label><input type="radio" name="{{ name }}" value="sim"{% if value == "sim" %} checked{% endif %}> Sim</label>
+        <label><input type="radio" name="{{ name }}" value="nao"{% if value == "nao" %} checked{% endif %}> Não</label>
+      </div>
+    {% else %}
+      <input id="{{ name }}" name="{{ name }}" value="{{ value }}"
+             type="{{ {'url': 'url', 'date': 'date'}.get(q.kind, 'text') }}">
+    {% endif %}
+    {{ error(errors, q.key) }}
+  </div>
+{%- endmacro %}
+
+{% macro text_field(name, label, value, errors, type="text", required=True, help="") -%}
+  <div class="field{% if errors.get(name) %} has-error{% endif %}">
+    <label for="{{ name }}"{% if required %} class="required"{% endif %}>{{ label }}</label>
+    {% if help %}<span class="help">{{ help }}</span>{% endif %}
+    {% if type == "textarea" %}
+      <textarea id="{{ name }}" name="{{ name }}">{{ value or "" }}</textarea>
+    {% else %}
+      <input id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ value or '' }}">
+    {% endif %}
+    {{ error(errors, name) }}
+  </div>
+{%- endmacro %}

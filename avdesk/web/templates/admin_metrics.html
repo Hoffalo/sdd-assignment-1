@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Métricas{% endblock %}
+{% macro percent(value) %}{{ "—" if value is none else "%.0f%%"|format(value * 100) }}{% endmacro %}
+{% macro number(value) %}{{ "—" if value is none else "%.1f"|format(value) }}{% endmacro %}
+{% macro rating_table(title, rows) %}
+  <section class="card">
+    <h3>{{ title }}</h3>
+    {% if rows %}
+      <div class="table-wrap"><table>
+        <thead><tr><th></th>{% for label in dimensions.values() %}<th>{{ label }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for group, averages in rows.items() %}
+            <tr><td>{{ group }}</td>{% for key in dimensions %}<td>{{ number(averages[key]) }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table></div>
+    {% else %}<p>Ainda sem avaliações.</p>{% endif %}
+  </section>
+{% endmacro %}
+{% block content %}
+<h1>Métricas</h1>
+
+<section class="card">
+  <h3>Visão geral</h3>
+  <p><strong>{{ dashboard.total_requests }}</strong> pedidos ·
+     prazo curto em <strong>{{ percent(dashboard.rush_share) }}</strong> ·
+     entregues no prazo: <strong>{{ percent(dashboard.on_time_rate) }}</strong> ·
+     taxa de resposta das avaliações: <strong>{{ percent(dashboard.response_rate) }}</strong> ·
+     briefing médio: <strong>{{ number(dashboard.average_score) }}%</strong></p>
+</section>
+
+<section class="card">
+  <h3>Pedidos por status</h3>
+  {% set largest = dashboard.open_by_status.values()|max if dashboard.open_by_status else 1 %}
+  {% for status, count in dashboard.open_by_status.items() %}
+    <div class="bar-row"><span>{{ status.label }}</span>
+      <div class="bar" style="width: {{ (count / largest * 100)|round }}%"></div><span>{{ count }}</span></div>
+  {% else %}<p>Nenhum pedido ainda.</p>{% endfor %}
+</section>
+
+<section class="card">
+  <h3>Tempo de produção (mediana, dias do aceite à entrega)</h3>
+  {% for type, days in dashboard.median_turnaround_by_type.items() %}
+    <p>{{ type }}: <strong>{{ number(days) }}</strong></p>
+  {% else %}<p>Nenhuma entrega ainda.</p>{% endfor %}
+</section>
+
+<section class="card">
+  <h3>Resultado das avaliações (quem pediu)</h3>
+  {% for outcome, label in outcomes.items() %}
+    <p>{{ label }}: <strong>{{ dashboard.outcome_counts.get(outcome, 0) }}</strong>
+      {% if outcome in dashboard.average_score_by_outcome %} · briefing médio {{ number(dashboard.average_score_by_outcome[outcome]) }}%{% endif %}</p>
+  {% endfor %}
+</section>
+
+{{ rating_table("Notas médias por tipo", dashboard.ratings_by_type) }}
+{{ rating_table("Notas médias por diretoria", dashboard.ratings_by_diretoria) }}
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Novo pedido{% endblock %}
+{% block content %}
+<h1>Novo pedido de vídeo</h1>
+<p>Quanto mais contexto você der, menos idas e vindas teremos. Os campos com <span class="required"></span> são obrigatórios.</p>
+{% include "_briefing_fields.html" %}
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/briefing.js') }}"></script>{% endblock %}
