@@ -1,6 +1,9 @@
-/* BRASA AV manual palette. Hagrid (titles) is not licensed for this repo and
-   nothing may load from a CDN (the container must work offline), so titles
-   fall back to Lato when installed, then the system sans-serif. */
+/* Palette and type rules from the Manual de ID Visual BRASA 2025:
+   on light backgrounds text is only Cinza Escuro; on dark blue/green
+   backgrounds text is only Cinza Claro; palette colours are never text.
+   Lato is the official face. Hagrid (display titles) is not licensed for this
+   repo and nothing may load from a CDN (the container runs offline), so every
+   title uses Lato Bold, falling back to the system sans-serif. */
 :root {
   --azul-vivido: #065FD8;
   --azul-escuro: #1A2B77;
@@ -28,8 +31,9 @@ body {
   line-height: 1.5;
 }
 
-h1, h2, h3 { color: var(--azul-escuro); font-weight: 800; line-height: 1.2; }
-a { color: var(--azul-vivido); }
+h1, h2, h3 { color: var(--noite-urbana); font-weight: 700; line-height: 1.2; }
+h3 { font-weight: 400; text-transform: uppercase; letter-spacing: .03em; }
+a { color: var(--noite-urbana); text-decoration-color: var(--azul-vivido); text-decoration-thickness: 2px; }
 
 .topbar {
   display: flex;
@@ -39,7 +43,7 @@ a { color: var(--azul-vivido); }
   padding: 12px 24px;
   background: var(--azul-escuro);
 }
-.topbar a { color: var(--branco); text-decoration: none; }
+.topbar a { color: var(--luz-brasa); text-decoration: none; }
 .topbar nav { display: flex; gap: var(--gap); flex-wrap: wrap; align-items: center; }
 .topbar nav form { margin: 0; }
 .brand { font-weight: 800; font-size: 1.1rem; }
@@ -65,18 +69,20 @@ a { color: var(--azul-vivido); }
   border: 0;
   border-radius: var(--radius);
   background: var(--azul-vivido);
-  color: var(--branco);
+  color: var(--luz-brasa);
   font: inherit;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
   text-decoration: none;
   cursor: pointer;
 }
-.button-secondary { background: var(--branco); color: var(--azul-vivido); box-shadow: inset 0 0 0 2px var(--azul-vivido); }
+.button-secondary { background: var(--branco); color: var(--noite-urbana); box-shadow: inset 0 0 0 2px var(--azul-vivido); }
 .button-danger { background: var(--erro); }
-.button-link { background: none; color: var(--branco); padding: 0; font-weight: 400; }
+.button-link { background: none; color: var(--luz-brasa); padding: 0; font-weight: 400; text-transform: none; }
 
 fieldset { border: 0; padding: 0; margin: 0 0 24px; }
-legend { font-size: 1.2rem; font-weight: 800; color: var(--azul-escuro); margin-bottom: 8px; }
+legend { font-size: 1.1rem; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 8px; }
 .field { margin-bottom: 14px; }
 .field label, .field .label { display: block; font-weight: 700; }
 .field .help { display: block; font-size: .9rem; color: #555; }
@@ -120,11 +126,11 @@ legend { font-size: 1.2rem; font-weight: 800; color: var(--azul-escuro); margin-
   font-weight: 700;
   background: #e3e3e3;
 }
-.badge-rush { background: var(--laranja); color: var(--branco); }
+.badge-rush { background: var(--laranja); }
 .badge-submitted, .badge-needs_info { background: var(--amarelo); }
-.badge-accepted, .badge-in_production, .badge-in_review { background: var(--azul-vivido); color: var(--branco); }
-.badge-delivered, .badge-closed { background: var(--verde-folha); color: var(--branco); }
-.badge-declined, .badge-cancelled { background: var(--noite-urbana); color: var(--branco); }
+.badge-accepted, .badge-in_production, .badge-in_review { background: var(--azul-escuro); color: var(--luz-brasa); }
+.badge-delivered, .badge-closed { background: var(--verde-escuro); color: var(--luz-brasa); }
+.badge-declined, .badge-cancelled { background: var(--noite-urbana); color: var(--luz-brasa); }
 
 table { width: 100%; border-collapse: collapse; background: var(--branco); }
 th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e6e6e6; vertical-align: top; }
