@@ -1,0 +1,152 @@
+/* BRASA AV manual palette. Hagrid (titles) is not licensed for this repo and
+   nothing may load from a CDN (the container must work offline), so titles
+   fall back to Lato when installed, then the system sans-serif. */
+:root {
+  --azul-vivido: #065FD8;
+  --azul-escuro: #1A2B77;
+  --verde-escuro: #03571A;
+  --verde-folha: #00863D;
+  --amarelo: #FFCC02;
+  --laranja: #FB8C0A;
+  --noite-urbana: #252726;
+  --luz-brasa: #F4F4F4;
+  --branco: #FFFFFF;
+  --erro: #B3261E;
+
+  --font: Lato, "Segoe UI", system-ui, -apple-system, sans-serif;
+  --radius: 10px;
+  --gap: 16px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--noite-urbana);
+  background: var(--luz-brasa);
+  line-height: 1.5;
+}
+
+h1, h2, h3 { color: var(--azul-escuro); font-weight: 800; line-height: 1.2; }
+a { color: var(--azul-vivido); }
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--gap);
+  padding: 12px 24px;
+  background: var(--azul-escuro);
+}
+.topbar a { color: var(--branco); text-decoration: none; }
+.topbar nav { display: flex; gap: var(--gap); flex-wrap: wrap; align-items: center; }
+.topbar nav form { margin: 0; }
+.brand { font-weight: 800; font-size: 1.1rem; }
+.brand span { color: var(--amarelo); }
+
+.page { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
+
+.hero p { font-size: 1.1rem; max-width: 60ch; }
+
+.card {
+  background: var(--branco);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+  margin-bottom: var(--gap);
+}
+.card-muted { background: transparent; box-shadow: inset 0 0 0 1px #d6d6d6; }
+.gate-options { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+
+.button, button {
+  display: inline-block;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--azul-vivido);
+  color: var(--branco);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.button-secondary { background: var(--branco); color: var(--azul-vivido); box-shadow: inset 0 0 0 2px var(--azul-vivido); }
+.button-danger { background: var(--erro); }
+.button-link { background: none; color: var(--branco); padding: 0; font-weight: 400; }
+
+fieldset { border: 0; padding: 0; margin: 0 0 24px; }
+legend { font-size: 1.2rem; font-weight: 800; color: var(--azul-escuro); margin-bottom: 8px; }
+.field { margin-bottom: 14px; }
+.field label, .field .label { display: block; font-weight: 700; }
+.field .help { display: block; font-size: .9rem; color: #555; }
+.field input[type=text], .field input[type=email], .field input[type=url], .field input[type=date],
+.field input[type=password], .field select, .field textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #c4c4c4;
+  border-radius: 6px;
+  font: inherit;
+  background: var(--branco);
+}
+.field textarea { min-height: 80px; }
+.field .options { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.field .options label { font-weight: 400; }
+.field.has-error input, .field.has-error textarea, .field.has-error select { border-color: var(--erro); }
+.error { color: var(--erro); font-size: .9rem; }
+.required::after { content: " *"; color: var(--erro); }
+
+.notice { border-left: 4px solid var(--azul-vivido); background: var(--branco); padding: 10px 14px; margin: 12px 0; }
+.notice-rush { border-color: var(--laranja); }
+.notice-error { border-color: var(--erro); }
+.flash { padding: 10px 14px; border-radius: 6px; background: var(--branco); border-left: 4px solid var(--verde-folha); }
+.flash-error { border-color: var(--erro); }
+
+.sticky-score {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--luz-brasa);
+  padding: 8px 0;
+}
+.meter { height: 10px; background: #ddd; border-radius: 5px; overflow: hidden; }
+.meter > span { display: block; height: 100%; background: var(--verde-folha); }
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: .85rem;
+  font-weight: 700;
+  background: #e3e3e3;
+}
+.badge-rush { background: var(--laranja); color: var(--branco); }
+.badge-submitted, .badge-needs_info { background: var(--amarelo); }
+.badge-accepted, .badge-in_production, .badge-in_review { background: var(--azul-vivido); color: var(--branco); }
+.badge-delivered, .badge-closed { background: var(--verde-folha); color: var(--branco); }
+.badge-declined, .badge-cancelled { background: var(--noite-urbana); color: var(--branco); }
+
+table { width: 100%; border-collapse: collapse; background: var(--branco); }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e6e6e6; vertical-align: top; }
+th { font-size: .85rem; text-transform: uppercase; color: #555; }
+.table-wrap { overflow-x: auto; }
+
+.timeline { list-style: none; padding: 0; }
+.timeline li { padding: 8px 0 8px 16px; border-left: 3px solid var(--azul-vivido); margin-left: 4px; }
+.timeline time { font-size: .85rem; color: #555; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: var(--gap); }
+.filters .field { margin: 0; }
+
+.actions { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.actions form { margin: 0; }
+
+.bar-row { display: grid; grid-template-columns: 160px 1fr 48px; gap: 8px; align-items: center; margin: 4px 0; }
+.bar { height: 14px; background: var(--azul-vivido); border-radius: 3px; }
+
+pre.copyable { white-space: pre-wrap; background: var(--branco); padding: 12px; border-radius: 6px; border: 1px solid #ddd; }
+
+@media (max-width: 600px) {
+  .topbar { flex-direction: column; align-items: flex-start; }
+  .bar-row { grid-template-columns: 110px 1fr 40px; }
+}
