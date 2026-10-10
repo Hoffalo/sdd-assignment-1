@@ -9,6 +9,9 @@ from flask import Flask
 from avdesk.clock import Clock, SystemClock
 from avdesk.config import Config
 from avdesk.db import Database, create_schema, load_seed, seed_if_empty
+from avdesk.feedback_domain.events import FeedbackEventSubject
+from avdesk.feedback_domain.facade import FeedbackFacade
+from avdesk.feedback_domain.repository import SqliteFeedbackRepository
 from avdesk.requests_domain.events import RequestEventSubject
 from avdesk.requests_domain.facade import RequestsFacade
 from avdesk.requests_domain.intake import BriefingIntake
@@ -35,6 +38,15 @@ def build_requests_domain(database: Database, clock: Clock, tokens: TokenGenerat
         tokens=tokens,
         clock=clock,
     )
+    return facade, events
+
+
+def build_feedback_domain(database: Database, clock: Clock, tokens: TokenGenerator,
+                          ttl_days: int) -> tuple[FeedbackFacade, FeedbackEventSubject]:
+    repository = SqliteFeedbackRepository(database)
+    events = FeedbackEventSubject()
+    facade = FeedbackFacade(reader=repository, writer=repository, events=events, tokens=tokens, clock=clock,
+                            ttl_days=ttl_days)
     return facade, events
 
 
