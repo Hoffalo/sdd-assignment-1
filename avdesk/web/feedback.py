@@ -28,7 +28,7 @@ def submit_feedback(token):
     feedback = services().feedback
     result = feedback.submit(token, request.form)
     if result.response is not None:
-        return render_template("feedback_closed.html", message="Avaliação enviada. Muito obrigado!", thanks=True)
+        return render_template("message.html", heading="Obrigado!", message="Avaliação enviada. Muito obrigado!")
     if result.errors:
         invite, _ = feedback.open_invite(token)
         return render_form(invite, request.form, result.errors), 422
@@ -42,4 +42,4 @@ def render_form(invite, form, errors):
 
 def render_closed(state: InviteState):
     status = 404 if state == InviteState.NOT_FOUND else 200
-    return render_template("feedback_closed.html", message=CLOSED_MESSAGES[state], thanks=False), status
+    return render_template("message.html", heading="Link indisponível", message=CLOSED_MESSAGES[state]), status

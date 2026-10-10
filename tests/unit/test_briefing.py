@@ -3,8 +3,8 @@ from datetime import date
 import pytest
 
 from avdesk.requests_domain.briefing import BriefingBuilder, BriefingDirector
+from avdesk.requests_domain.intake import BriefingScorer
 from avdesk.requests_domain.leadtime import StandardLeadTime
-from avdesk.requests_domain.scoring import BriefingScorer
 from avdesk.requests_domain.validators import BriefingValidator
 from tests.factories import make_catalog
 

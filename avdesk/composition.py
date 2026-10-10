@@ -15,17 +15,16 @@ from avdesk.db import Database, create_schema, load_seed, seed_if_empty
 from avdesk.feedback_domain.events import FeedbackEventSubject
 from avdesk.feedback_domain.facade import FeedbackFacade
 from avdesk.feedback_domain.repository import SqliteFeedbackRepository
-from avdesk.integrations.task_tracker import ClickUpTaskTracker, DisabledTaskTracker, TaskTracker
 from avdesk.requests_domain.events import RequestEventSubject
 from avdesk.requests_domain.facade import RequestsFacade
-from avdesk.requests_domain.intake import BriefingIntake
+from avdesk.requests_domain.intake import BriefingIntake, BriefingScorer
 from avdesk.requests_domain.lifecycle import Lifecycle, StatusCommandFactory
 from avdesk.requests_domain.repository import SqliteCatalogReader, SqliteRequestRepository
-from avdesk.requests_domain.scoring import BriefingScorer
 from avdesk.requests_domain.validators import BriefingValidator
 from avdesk.services.metrics import MetricsService
 from avdesk.services.seam import FeedbackInviteObserver, FeedbackOutcomeApplier
 from avdesk.services.task_observer import TaskTrackerObserver
+from avdesk.task_tracker import ClickUpTaskTracker, DisabledTaskTracker, TaskTracker
 from avdesk.tokens import SecureTokenGenerator, TokenGenerator
 from avdesk.web import admin, feedback, public, security
 

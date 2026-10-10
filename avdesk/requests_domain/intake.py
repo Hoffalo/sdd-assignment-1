@@ -10,8 +10,23 @@ from avdesk.clock import Clock
 from avdesk.requests_domain.briefing import Briefing
 from avdesk.requests_domain.leadtime import LeadTimeAssessment, lead_time_policy_for
 from avdesk.requests_domain.models import Catalog
-from avdesk.requests_domain.scoring import BriefingScorer
-from avdesk.requests_domain.validators import BriefingValidator
+from avdesk.requests_domain.validators import BriefingValidator, is_blank
+
+
+class BriefingScorer:
+    """Completeness score, shown live to the requester and kept for metrics.
+
+    Separate from validation (SRP): validation decides whether a briefing may
+    be submitted, the score measures how much context it carries beyond the
+    minimum, so metrics can test whether fuller briefings get better outcomes.
+    """
+
+    def score(self, briefing: Briefing, catalog: Catalog) -> int:
+        questions = catalog.questions_for(briefing.type_code)
+        if not questions:
+            return 0
+        answered = sum(not is_blank(briefing.answers.get(q.key)) for q in questions)
+        return round(100 * answered / len(questions))
 
 
 @dataclass(frozen=True)

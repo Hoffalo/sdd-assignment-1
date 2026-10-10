@@ -1,8 +1,8 @@
 """Accepted request -> ClickUp task, attached through the same Observer as the seam."""
-from avdesk.integrations.task_tracker import TaskDraft, TaskTracker
 from avdesk.requests_domain.events import RequestObserver, StatusChanged
 from avdesk.requests_domain.facade import RequestsFacade
 from avdesk.requests_domain.models import Status
+from avdesk.task_tracker import TaskDraft, TaskTracker
 
 
 class TaskTrackerObserver(RequestObserver):

@@ -7,12 +7,12 @@ import pytest
 
 from avdesk.feedback_domain.facade import Recipient
 from avdesk.feedback_domain.models import Outcome, ResponseReceived
-from avdesk.integrations.task_tracker import ClickUpTaskTracker, DisabledTaskTracker, TaskDraft, TaskTrackerError
 from avdesk.requests_domain.events import RequestSnapshot, StatusChanged
 from avdesk.requests_domain.models import Status
 from avdesk.services.admin_guard import AdminOnly, AdminRequired
 from avdesk.services.seam import FeedbackInviteObserver, FeedbackOutcomeApplier
 from avdesk.services.task_observer import TaskTrackerObserver
+from avdesk.task_tracker import ClickUpTaskTracker, DisabledTaskTracker, TaskDraft, TaskTrackerError
 
 DELIVERED_AT = datetime(2026, 10, 9, 12, 0, tzinfo=timezone.utc)
 

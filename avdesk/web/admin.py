@@ -7,7 +7,7 @@ from avdesk.requests_domain.lifecycle import MissingInput, NotUndoable, Transiti
 from avdesk.requests_domain.models import Status
 from avdesk.requests_domain.repository import RequestFilter, StaleTransition
 from avdesk.services.admin_guard import AdminOnly, AdminRequired
-from avdesk.web import security, services
+from avdesk.web import public, security, services
 from avdesk.web.forms import parse_int
 
 blueprint = Blueprint("admin", __name__, url_prefix="/admin")
@@ -25,8 +25,8 @@ def ask_for_login(_error):
 
 
 @blueprint.errorhandler(RequestNotFound)
-def request_not_found(_error):
-    return render_template("not_found.html"), 404
+def request_not_found(error):
+    return public.not_found(error)
 
 
 @blueprint.get("/login")

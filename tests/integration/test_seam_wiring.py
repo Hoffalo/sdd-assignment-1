@@ -6,9 +6,9 @@ import pytest
 from avdesk.composition import build_services
 from avdesk.config import Config
 from avdesk.feedback_domain.models import InviteState
-from avdesk.integrations.task_tracker import TaskTracker
 from avdesk.requests_domain.briefing import BriefingBuilder, BriefingDirector
 from avdesk.requests_domain.models import Status
+from avdesk.task_tracker import TaskTracker
 
 FORM = {"rating_tone": "5", "rating_quality": "5", "rating_process": "4", "rating_usefulness": "5", "comment": ""}
 

@@ -96,4 +96,5 @@ def render_tracking(tracked, errors: dict, edited: Briefing | None = None):
 
 @blueprint.app_errorhandler(404)
 def not_found(_error):
-    return render_template("not_found.html"), 404
+    return render_template("message.html", heading="Não encontramos esta página",
+                           message="Confira se o link foi copiado inteiro.", back_home=True), 404
