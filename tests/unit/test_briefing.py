@@ -150,4 +150,5 @@ def test_score_is_full_when_every_question_is_answered(catalog):
 def test_score_counts_only_questions_of_the_chosen_type(catalog):
     briefing = BriefingBuilder().request_type("outro").answer("outro_justificativa", "Porque sim").build()
 
-    assert BriefingScorer().score(briefing, catalog) == 50
+    # 3 common questions + 1 for "outro"; the teaser question is not counted.
+    assert BriefingScorer().score(briefing, catalog) == 25
