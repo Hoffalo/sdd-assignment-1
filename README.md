@@ -72,10 +72,44 @@ Pyramid: 114 unit tests (62%), 50 integration tests (27%, real SQLite in a temp 
 
 ## Container contract evidence (`container/run.sh`)
 
+Run on 2026-10-17 with the provided, unmodified `container/run.sh`:
+
 ```text
-TO PASTE: output of ./container/run.sh .
-(Docker Desktop was not running when this README was written.)
+=== SDD Assignment 1 contract check ===
+Repository: /c/Users/loren/Documents/IE-University-Files/y3/devops/sdd-assignment-1
+
+==> Repository shape
+  PASS  one Dockerfile, one manifest (requirements.txt)
+
+==> Build from a clean context, no build args
+  PASS  image built
+  PASS  image size 53 MB
+
+==> Start on PORT=8000 and reach it from the host
+  PASS  HTTP 200 from http://localhost:8000/
+
+==> SQLite file under DATA_DIR
+  PASS  found in /data: avdesk.sqlite3 
+
+==> Data persists, and a second boot does not re-seed
+  PASS  volume at /data persists
+  PASS  row counts unchanged across restart: analysts=3
+ briefing_questions=31
+ diretorias=8
+ feedback_invites=0
+ feedback_responses=0
+ request_events=0
+ request_types=4
+ requests=0 
+
+==> PORT override is honoured (not hardcoded)
+  PASS  HTTP 200 from http://localhost:9123/
+
+=== ALL CHECKS PASSED ===
+Paste this output into your README as the §7 evidence.
 ```
+
+Note for Windows (Git Bash): the script calls `mktemp -t sdd-check`, which GNU `mktemp` rejects because the template has no `XXX`, and `python3` is only the Microsoft Store placeholder there. It was run with two tiny wrappers placed first on `PATH`, one adding `.XXXXXX` to the template and one pointing `python3` at the installed Python. The script itself was not changed. On macOS or Linux it runs as is.
 
 ## Architecture
 
