@@ -559,6 +559,6 @@ Cut between the two domain folders. The line runs through [services/seam.py](../
 ### Further reading in this repo
 
 - [ADR.md](../ADR.md): the formal decision records.
-- [DESIGN_NOTES.md](DESIGN_NOTES.md): pattern-by-pattern problem, reason and trade-off, with space for your own explanation.
+- [DESIGN_NOTES.md](DESIGN_NOTES.md): pattern-by-pattern problem, reason and trade-off.
 - [AI_USAGE.md](../AI_USAGE.md): how AI was used, prompt by prompt.
 - A README inside each code directory explains that directory in detail.
