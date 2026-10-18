@@ -11,7 +11,12 @@ def make_catalog() -> Catalog:
         ),
         questions=(
             Question("objetivo", None, "Objetivo", "Objetivo?", "textarea", (), True),
-            Question("tom", None, "Tom", "Tom?", "choice", ("Inspirador", "Institucional"), True),
+            Question("tom", None, "Tom", "Tom?", "choice", ("Inspirador", "Institucional", "Outro"), True),
+            Question("tom_outro", None, "Tom", "Qual tom?", "textarea", (), True,
+                     depends_on="tom", depends_value="Outro"),
+            Question("destinos", None, "Onde", "Onde?", "multichoice", ("YouTube", "Instagram"), False),
+            Question("instagram_principal", None, "Onde", "Conta principal?", "choice", ("@gobrasa", "@redegobrasa"),
+                     True, depends_on="destinos", depends_value="Instagram"),
             Question("roteiro_url", None, "Material", "Roteiro?", "url", (), False),
             Question("teaser_anuncio", "teaser", "Teaser", "Anuncia o quê?", "text", (), True),
             Question("outro_justificativa", "outro", "Outro", "Por quê?", "textarea", (), True),

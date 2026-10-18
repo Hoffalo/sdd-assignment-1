@@ -139,3 +139,10 @@ def test_markdown_export_lists_answers_by_section(facade, submitted):
     markdown = facade.briefing_markdown(submitted.id)
 
     assert "## Sobre o teaser" in markdown and "Abertura das inscrições" in markdown
+
+
+def test_answers_to_hidden_questions_are_dropped_on_submit(facade, director):
+    _, request = facade.submit(director.teaser(needed_by=FAR_AWAY, tom="Institucional", tom_outro="sobrou",
+                                               destinos=("YouTube",), instagram_principal="@gobrasa"))
+
+    assert {"tom_outro", "instagram_principal"}.isdisjoint(request.briefing.answers)

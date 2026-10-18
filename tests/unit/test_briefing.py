@@ -150,5 +150,60 @@ def test_score_is_full_when_every_question_is_answered(catalog):
 def test_score_counts_only_questions_of_the_chosen_type(catalog):
     briefing = BriefingBuilder().request_type("outro").answer("outro_justificativa", "Porque sim").build()
 
-    # 3 common questions + 1 for "outro"; the teaser question is not counted.
-    assert BriefingScorer().score(briefing, catalog) == 25
+    # 4 visible common questions + 1 for "outro"; the teaser question and the two
+    # conditional questions (tom is not "Outro", Instagram not chosen) are not counted.
+    assert BriefingScorer().score(briefing, catalog) == 20
+
+
+# Conditional questions
+
+def test_question_without_condition_is_always_shown(catalog):
+    objetivo = next(q for q in catalog.questions if q.key == "objetivo")
+
+    assert objetivo.is_shown({})
+
+
+@pytest.mark.parametrize("answers, shown", [({"tom": "Outro"}, True), ({"tom": "Institucional"}, False), ({}, False)])
+def test_question_depending_on_a_choice_is_shown_only_for_that_choice(catalog, answers, shown):
+    tom_outro = next(q for q in catalog.questions if q.key == "tom_outro")
+
+    assert tom_outro.is_shown(answers) is shown
+
+
+@pytest.mark.parametrize("destinos, shown", [(("YouTube", "Instagram"), True), (("YouTube",), False)])
+def test_question_depending_on_a_multichoice_is_shown_when_the_option_is_ticked(catalog, destinos, shown):
+    principal = next(q for q in catalog.questions if q.key == "instagram_principal")
+
+    assert principal.is_shown({"destinos": destinos}) is shown
+
+
+def test_other_tone_requires_a_description(director, validator, catalog):
+    briefing = director.teaser(needed_by=FAR_AWAY, tom="Outro")
+
+    assert "tom_outro" in validator.validate(briefing, catalog, TODAY, assess(briefing))
+
+
+def test_hidden_required_question_is_not_required(director, validator, catalog):
+    briefing = director.teaser(needed_by=FAR_AWAY, tom="Institucional")
+
+    assert "tom_outro" not in validator.validate(briefing, catalog, TODAY, assess(briefing))
+
+
+def test_instagram_requires_a_primary_account(director, validator, catalog):
+    briefing = director.teaser(needed_by=FAR_AWAY, destinos=("Instagram",), instagram_principal="")
+
+    assert "instagram_principal" in validator.validate(briefing, catalog, TODAY, assess(briefing))
+
+
+def test_without_instagram_no_account_is_asked(director, validator, catalog):
+    briefing = director.teaser(needed_by=FAR_AWAY, destinos=("YouTube",), instagram_principal="")
+
+    assert "instagram_principal" not in validator.validate(briefing, catalog, TODAY, assess(briefing))
+
+
+def test_hidden_questions_do_not_count_towards_the_score(catalog):
+    hidden_answered = (BriefingBuilder().request_type("outro").answer("outro_justificativa", "Porque sim")
+                       .answer("tom", "Institucional").answer("tom_outro", "sobrou").build())
+
+    # objetivo, tom, destinos, roteiro_url, outro_justificativa are visible; tom_outro is not.
+    assert BriefingScorer().score(hidden_answered, catalog) == 40
