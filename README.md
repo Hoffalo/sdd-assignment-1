@@ -110,7 +110,7 @@ web/  →  RequestsFacade  ─┐                       ┌─  FeedbackFacade  
                           └── services/metrics.py ┘   (reads both)
 ```
 
-Two domains, each with its own tables and one Facade, never importing each other. They cooperate through events: delivery creates feedback invites; the requester's feedback closes or reopens the request; metrics read both. All cross-domain code is in `avdesk/services/`, and the seam itself is `services/seam.py`. In Assignment 2 the events become Pub/Sub messages and the facades become HTTP APIs.
+Full diagrams: [architecture](docs/diagrams/architecture.svg) and [database schema](docs/diagrams/database.svg). Two domains, each with its own tables and one Facade, never importing each other. They cooperate through events: delivery creates feedback invites; the requester's feedback closes or reopens the request; metrics read both. All cross-domain code is in `avdesk/services/`, and the seam itself is `services/seam.py`. In Assignment 2 the events become Pub/Sub messages and the facades become HTTP APIs.
 
 ## Design patterns and principles
 
@@ -163,7 +163,7 @@ Pyramid: 128 unit tests (62%), 59 integration tests (28%, real SQLite in a temp 
 
 ## Container contract evidence (`container/run.sh`)
 
-Run on 2026-10-17 with the provided, unmodified `container/run.sh`:
+Run on 2026-10-18 with the provided, unmodified `container/run.sh`, after the schema migrations and the briefing-catalog sync were added (a second boot still changes no row counts):
 
 ```text
 === SDD Assignment 1 contract check ===
@@ -215,6 +215,7 @@ Note for Windows (Git Bash): the script calls `mktemp -t sdd-check`, which GNU `
 
 | Document | What it gives you |
 |---|---|
+| [docs/REPORT.md](docs/REPORT.md) | The assignment report: SDLC and goals, diagrams, testing, AI disclosure |
 | [docs/GUIDE.md](docs/GUIDE.md) | The whole project explained top to bottom, including problems met along the way |
 | [docs/DESIGN_NOTES.md](docs/DESIGN_NOTES.md) | Problem, reason and trade-off for every pattern and principle |
 | [ADR.md](ADR.md) | Formal architecture decision records |

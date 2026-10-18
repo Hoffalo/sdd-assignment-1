@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="880" viewBox="0 0 1100 880" font-family="Lato, 'Segoe UI', Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#252726"/></marker></defs>
+<rect width="1100" height="880" fill="#FFFFFF"/>
+<text x="30" y="34" fill="#252726" font-size="20" font-weight="700" text-anchor="start">AV Desk · architecture (Assignment 1: one process, one container)</text>
+<rect x="90" y="60" width="220" height="44" rx="8" fill="#F4F4F4" stroke="#252726" stroke-width="2"/>
+<text x="200" y="87" fill="#252726" font-size="13" font-weight="700" text-anchor="middle">Requester · private link</text>
+<rect x="440" y="60" width="220" height="44" rx="8" fill="#F4F4F4" stroke="#252726" stroke-width="2"/>
+<text x="550" y="87" fill="#252726" font-size="13" font-weight="700" text-anchor="middle">AV manager · /admin</text>
+<rect x="790" y="60" width="220" height="44" rx="8" fill="#F4F4F4" stroke="#252726" stroke-width="2"/>
+<text x="900" y="87" fill="#252726" font-size="13" font-weight="700" text-anchor="middle">Reviewer · feedback link</text>
+<line x1="200" y1="104" x2="200" y2="160" stroke="#252726" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="550" y1="104" x2="550" y2="160" stroke="#252726" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="900" y1="104" x2="900" y2="160" stroke="#252726" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="20" y="125" width="1060" height="650" rx="12" fill="#FFFFFF" stroke="#888888" stroke-width="2" stroke-dasharray="8 5"/>
+<text x="36" y="147" fill="#555555" font-size="12" font-weight="700" text-anchor="start">Docker container · python app.py · waitress on 0.0.0.0:$PORT · settings from env vars (config.py, Singleton)</text>
+<line x1="550" y1="236" x2="550" y2="760" stroke="#FB8C0A" stroke-width="3" stroke-dasharray="12 7"/>
+<rect x="60" y="160" width="980" height="62" rx="8" fill="#F4F4F4" stroke="#1A2B77" stroke-width="2"/>
+<text x="76" y="184" fill="#252726" font-size="14" font-weight="700" text-anchor="start">web/  (Flask, thin glue: parse form → call a facade → render a Jinja template, pt-BR UI)</text>
+<text x="76" y="206" fill="#252726" font-size="12" font-weight="400" text-anchor="start">public.py: landing, briefing form, tracking  ·  feedback.py: feedback form  ·  admin.py: inbox, actions, metrics via AdminOnly (Proxy)  ·  security.py: CSRF</text>
+<line x1="230" y1="222" x2="230" y2="262" stroke="#252726" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="870" y1="222" x2="870" y2="262" stroke="#252726" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="550" y1="222" x2="550" y2="262" stroke="#252726" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="60" y="262" width="340" height="270" rx="8" fill="#FFFFFF" stroke="#065FD8" stroke-width="3"/>
+<text x="76" y="288" fill="#065FD8" font-size="16" font-weight="700" text-anchor="start">requests_domain/</text>
+<rect x="76" y="298" width="308" height="30" rx="5" fill="#065FD8" stroke="#065FD8" stroke-width="1"/>
+<text x="230" y="318" fill="#F4F4F4" font-size="13" font-weight="700" text-anchor="middle">RequestsFacade (Facade)</text>
+<text x="80" y="350" fill="#252726" font-size="12" font-weight="400" text-anchor="start">intake.py · validators.py · BriefingScorer</text>
+<text x="80" y="367" fill="#252726" font-size="12" font-weight="400" text-anchor="start">briefing.py · Builder + Director</text>
+<text x="80" y="384" fill="#252726" font-size="12" font-weight="400" text-anchor="start">leadtime.py · Strategy (standard / conference)</text>
+<text x="80" y="401" fill="#252726" font-size="12" font-weight="400" text-anchor="start">lifecycle.py · Command + Factory Method</text>
+<text x="80" y="418" fill="#252726" font-size="12" font-weight="400" text-anchor="start">events.py · Observer subject (StatusChanged)</text>
+<text x="80" y="435" fill="#252726" font-size="12" font-weight="400" text-anchor="start">repository.py · reader/writer ABCs + SQLite adapter</text>
+<text x="80" y="452" fill="#252726" font-size="12" font-weight="400" text-anchor="start">summary.py · Markdown / Slack text</text>
+<text x="80" y="469" fill="#252726" font-size="12" font-weight="400" text-anchor="start">questions &amp; types: data in seed.json</text>
+<rect x="700" y="262" width="340" height="270" rx="8" fill="#FFFFFF" stroke="#00863D" stroke-width="3"/>
+<text x="716" y="288" fill="#03571A" font-size="16" font-weight="700" text-anchor="start">feedback_domain/</text>
+<rect x="716" y="298" width="308" height="30" rx="5" fill="#00863D" stroke="#00863D" stroke-width="1"/>
+<text x="870" y="318" fill="#F4F4F4" font-size="13" font-weight="700" text-anchor="middle">FeedbackFacade (Facade)</text>
+<text x="720" y="350" fill="#252726" font-size="12" font-weight="400" text-anchor="start">rules.py · 1–5 ratings, outcome, link state</text>
+<text x="720" y="367" fill="#252726" font-size="12" font-weight="400" text-anchor="start">events.py · Observer subject (ResponseReceived)</text>
+<text x="720" y="384" fill="#252726" font-size="12" font-weight="400" text-anchor="start">repository.py · reader/writer ABCs + SQLite adapter</text>
+<text x="720" y="401" fill="#252726" font-size="12" font-weight="400" text-anchor="start">models.py · DeliveredWork = own snapshot</text>
+<text x="720" y="418" fill="#252726" font-size="12" font-weight="400" text-anchor="start">single-use links that expire (FEEDBACK_TTL_DAYS)</text>
+<rect x="430" y="262" width="240" height="270" rx="8" fill="#FFF6DA" stroke="#FB8C0A" stroke-width="3"/>
+<text x="550" y="288" fill="#252726" font-size="16" font-weight="700" text-anchor="middle">services/</text>
+<text x="550" y="306" fill="#252726" font-size="11" font-weight="400" text-anchor="middle">only code that knows both domains</text>
+<text x="442" y="334" fill="#252726" font-size="12" font-weight="400" text-anchor="start">seam.py</text>
+<text x="442" y="353" fill="#252726" font-size="12" font-weight="400" text-anchor="start">  FeedbackInviteObserver</text>
+<text x="442" y="372" fill="#252726" font-size="12" font-weight="400" text-anchor="start">  FeedbackOutcomeApplier</text>
+<text x="442" y="391" fill="#252726" font-size="12" font-weight="400" text-anchor="start">task_observer.py</text>
+<text x="442" y="410" fill="#252726" font-size="12" font-weight="400" text-anchor="start">  TaskTrackerObserver (ClickUp)</text>
+<text x="442" y="429" fill="#252726" font-size="12" font-weight="400" text-anchor="start">metrics.py · MetricsService (reads both)</text>
+<text x="442" y="448" fill="#252726" font-size="12" font-weight="400" text-anchor="start">admin_guard.py · AdminOnly (Proxy)</text>
+<line x1="400" y1="470" x2="430" y2="470" stroke="#252726" stroke-width="1.8" marker-end="url(#a)"/>
+<text x="404" y="462" fill="#FB8C0A" font-size="13" font-weight="700" text-anchor="start">①</text>
+<line x1="670" y1="470" x2="700" y2="470" stroke="#252726" stroke-width="1.8" marker-end="url(#a)"/>
+<text x="674" y="462" fill="#FB8C0A" font-size="13" font-weight="700" text-anchor="start">①</text>
+<line x1="700" y1="505" x2="670" y2="505" stroke="#252726" stroke-width="1.8" marker-end="url(#a)"/>
+<text x="678" y="498" fill="#FB8C0A" font-size="13" font-weight="700" text-anchor="start">②</text>
+<line x1="430" y1="505" x2="400" y2="505" stroke="#252726" stroke-width="1.8" marker-end="url(#a)"/>
+<text x="408" y="498" fill="#FB8C0A" font-size="13" font-weight="700" text-anchor="start">②</text>
+<rect x="470" y="538" width="160" height="40" rx="6" fill="#FB8C0A" stroke="#FB8C0A" stroke-width="1"/>
+<text x="550" y="556" fill="#252726" font-size="13" font-weight="700" text-anchor="middle">SEAM</text>
+<text x="550" y="572" fill="#252726" font-size="12" font-weight="700" text-anchor="middle">Assignment 2 cut</text>
+<rect x="60" y="594" width="980" height="50" rx="8" fill="#F4F4F4" stroke="#888888" stroke-width="1.5"/>
+<text x="76" y="616" fill="#252726" font-size="13" font-weight="700" text-anchor="start">Adapters (contracts are ABCs; concrete classes are chosen only in composition.py, the composition root)</text>
+<text x="76" y="635" fill="#252726" font-size="12" font-weight="400" text-anchor="start">clock.py: Clock → SystemClock   ·   tokens.py: TokenGenerator → SecureTokenGenerator   ·   task_tracker.py: TaskTracker → ClickUp / Disabled   ·   db.py</text>
+<rect x="60" y="662" width="470" height="92" rx="8" fill="#FFFFFF" stroke="#065FD8" stroke-width="2"/>
+<text x="76" y="684" fill="#065FD8" font-size="13" font-weight="700" text-anchor="start">SQLite · requests tables</text>
+<text x="76" y="704" fill="#252726" font-size="12" font-weight="400" text-anchor="start">diretorias · analysts · request_types · briefing_questions</text>
+<text x="76" y="721" fill="#252726" font-size="12" font-weight="400" text-anchor="start">requests · request_events</text>
+<text x="76" y="738" fill="#252726" font-size="12" font-weight="400" text-anchor="start">foreign keys inside the domain only</text>
+<rect x="570" y="662" width="470" height="92" rx="8" fill="#FFFFFF" stroke="#00863D" stroke-width="2"/>
+<text x="586" y="684" fill="#03571A" font-size="13" font-weight="700" text-anchor="start">SQLite · feedback tables</text>
+<text x="586" y="704" fill="#252726" font-size="12" font-weight="400" text-anchor="start">feedback_invites · feedback_responses</text>
+<text x="586" y="721" fill="#252726" font-size="12" font-weight="400" text-anchor="start">request_id is a soft reference + snapshot</text>
+<text x="586" y="738" fill="#252726" font-size="12" font-weight="400" text-anchor="start">no foreign key into the requests tables (ADR-3)</text>
+<text x="550" y="770" fill="#555555" font-size="12" font-weight="700" text-anchor="middle">one file: $DATA_DIR/avdesk.sqlite3 · schema + migrations + seed.json on every boot (idempotent)</text>
+<line x1="230" y1="532" x2="230" y2="594" stroke="#252726" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="870" y1="532" x2="870" y2="594" stroke="#252726" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="300" y1="644" x2="300" y2="662" stroke="#252726" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="800" y1="644" x2="800" y2="662" stroke="#252726" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="820" y="800" width="220" height="50" rx="8" fill="#FFFFFF" stroke="#888888" stroke-width="1.5" stroke-dasharray="8 5"/>
+<text x="930" y="822" fill="#252726" font-size="13" font-weight="700" text-anchor="middle">ClickUp API (optional)</text>
+<text x="930" y="840" fill="#252726" font-size="11" font-weight="400" text-anchor="middle">task on 'accepted', 5 s timeout</text>
+<path d="M1040 619 H1062 V825 H1040" fill="none" stroke="#252726" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#a)"/>
+<text x="30" y="815" fill="#252726" font-size="13" font-weight="700" text-anchor="start">What crosses the seam:</text>
+<text x="30" y="835" fill="#252726" font-size="12" font-weight="400" text-anchor="start">① StatusChanged (delivered) → FeedbackInviteObserver → FeedbackFacade.create_invites</text>
+<text x="30" y="853" fill="#252726" font-size="12" font-weight="400" text-anchor="start">② ResponseReceived → FeedbackOutcomeApplier → RequestsFacade.perform(close | reopen)</text>
+<text x="30" y="871" fill="#252726" font-size="12" font-weight="400" text-anchor="start">③ MetricsService reads both facades. In Assignment 2 events become Pub/Sub messages and facades become HTTP APIs.</text>
+</svg>

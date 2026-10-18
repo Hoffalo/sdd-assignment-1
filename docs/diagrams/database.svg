@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="820" viewBox="0 0 1160 820" font-family="Lato, 'Segoe UI', Arial, sans-serif">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#252726"/></marker></defs>
+<rect width="1160" height="820" fill="#FFFFFF"/>
+<text x="30" y="34" fill="#252726" font-size="20" font-weight="700">AV Desk · SQLite schema ($DATA_DIR/avdesk.sqlite3)</text>
+<text x="30" y="56" fill="#252726" font-size="13">requests_domain (blue) and feedback_domain (green) own separate tables. Arrows point from a foreign key to the row it references. PRAGMA user_version = 3 (migrations applied).</text>
+<line x1="735" y1="66" x2="735" y2="800" stroke="#FB8C0A" stroke-width="2" stroke-dasharray="10 6"/>
+<text x="745" y="800" fill="#FB8C0A" font-size="13" font-weight="700">SEAM · no foreign key crosses this line</text>
+<rect x="30" y="80" width="250" height="70" rx="6" fill="#FFFFFF" stroke="#065FD8" stroke-width="2"/>
+<rect x="30" y="80" width="250" height="28" rx="6" fill="#065FD8"/>
+<rect x="30" y="102" width="250" height="6" fill="#065FD8"/>
+<text x="40" y="99" fill="#F4F4F4" font-weight="700" font-size="14">diretorias</text>
+<text x="40" y="121" fill="#252726" font-size="12" font-weight="700">id  PK</text>
+<text x="40" y="139" fill="#252726" font-size="12" font-weight="400">name  UNIQUE</text>
+<rect x="30" y="175" width="250" height="70" rx="6" fill="#FFFFFF" stroke="#065FD8" stroke-width="2"/>
+<rect x="30" y="175" width="250" height="28" rx="6" fill="#065FD8"/>
+<rect x="30" y="197" width="250" height="6" fill="#065FD8"/>
+<text x="40" y="194" fill="#F4F4F4" font-weight="700" font-size="14">analysts</text>
+<text x="40" y="216" fill="#252726" font-size="12" font-weight="700">id  PK</text>
+<text x="40" y="234" fill="#252726" font-size="12" font-weight="400">name  UNIQUE</text>
+<rect x="30" y="270" width="250" height="124" rx="6" fill="#FFFFFF" stroke="#065FD8" stroke-width="2"/>
+<rect x="30" y="270" width="250" height="28" rx="6" fill="#065FD8"/>
+<rect x="30" y="292" width="250" height="6" fill="#065FD8"/>
+<text x="40" y="289" fill="#F4F4F4" font-weight="700" font-size="14">request_types</text>
+<text x="40" y="311" fill="#252726" font-size="12" font-weight="700">code  PK</text>
+<text x="40" y="329" fill="#252726" font-size="12" font-weight="400">label</text>
+<text x="40" y="347" fill="#252726" font-size="12" font-weight="400">min_lead_business_days</text>
+<text x="40" y="365" fill="#252726" font-size="12" font-weight="400">detail_label</text>
+<text x="40" y="383" fill="#252726" font-size="12" font-weight="400">position</text>
+<rect x="30" y="425" width="250" height="232" rx="6" fill="#FFFFFF" stroke="#065FD8" stroke-width="2"/>
+<rect x="30" y="425" width="250" height="28" rx="6" fill="#065FD8"/>
+<rect x="30" y="447" width="250" height="6" fill="#065FD8"/>
+<text x="40" y="444" fill="#F4F4F4" font-weight="700" font-size="14">briefing_questions</text>
+<text x="40" y="466" fill="#252726" font-size="12" font-weight="700">key  PK</text>
+<text x="40" y="484" fill="#252726" font-size="12" font-weight="700">type_code  FK</text>
+<text x="40" y="502" fill="#252726" font-size="12" font-weight="400">section</text>
+<text x="40" y="520" fill="#252726" font-size="12" font-weight="400">label</text>
+<text x="40" y="538" fill="#252726" font-size="12" font-weight="400">help</text>
+<text x="40" y="556" fill="#252726" font-size="12" font-weight="400">kind</text>
+<text x="40" y="574" fill="#252726" font-size="12" font-weight="400">options_json</text>
+<text x="40" y="592" fill="#252726" font-size="12" font-weight="400">required</text>
+<text x="40" y="610" fill="#252726" font-size="12" font-weight="400">position</text>
+<text x="40" y="628" fill="#252726" font-size="12" font-weight="400">depends_on</text>
+<text x="40" y="646" fill="#252726" font-size="12" font-weight="400">depends_value</text>
+<rect x="350" y="80" width="300" height="502" rx="6" fill="#FFFFFF" stroke="#065FD8" stroke-width="2"/>
+<rect x="350" y="80" width="300" height="28" rx="6" fill="#065FD8"/>
+<rect x="350" y="102" width="300" height="6" fill="#065FD8"/>
+<text x="360" y="99" fill="#F4F4F4" font-weight="700" font-size="14">requests</text>
+<text x="360" y="121" fill="#252726" font-size="12" font-weight="700">id  PK</text>
+<text x="360" y="139" fill="#252726" font-size="12" font-weight="400">public_code  UNIQUE</text>
+<text x="360" y="157" fill="#252726" font-size="12" font-weight="400">tracking_token  UNIQUE</text>
+<text x="360" y="175" fill="#252726" font-size="12" font-weight="400">requester_name</text>
+<text x="360" y="193" fill="#252726" font-size="12" font-weight="400">requester_email</text>
+<text x="360" y="211" fill="#252726" font-size="12" font-weight="700">diretoria_id  FK</text>
+<text x="360" y="229" fill="#252726" font-size="12" font-weight="700">type_code  FK</text>
+<text x="360" y="247" fill="#252726" font-size="12" font-weight="400">type_detail</text>
+<text x="360" y="265" fill="#252726" font-size="12" font-weight="400">title</text>
+<text x="360" y="283" fill="#252726" font-size="12" font-weight="400">campaign</text>
+<text x="360" y="301" fill="#252726" font-size="12" font-weight="400">for_conference</text>
+<text x="360" y="319" fill="#252726" font-size="12" font-weight="400">needed_by</text>
+<text x="360" y="337" fill="#252726" font-size="12" font-weight="400">needed_by_reason</text>
+<text x="360" y="355" fill="#252726" font-size="12" font-weight="400">rush</text>
+<text x="360" y="373" fill="#252726" font-size="12" font-weight="400">rush_reason</text>
+<text x="360" y="391" fill="#252726" font-size="12" font-weight="400">answers_json</text>
+<text x="360" y="409" fill="#252726" font-size="12" font-weight="400">briefing_score</text>
+<text x="360" y="427" fill="#252726" font-size="12" font-weight="400">status</text>
+<text x="360" y="445" fill="#252726" font-size="12" font-weight="700">analyst_id  FK</text>
+<text x="360" y="463" fill="#252726" font-size="12" font-weight="400">accepted_at</text>
+<text x="360" y="481" fill="#252726" font-size="12" font-weight="400">review_url</text>
+<text x="360" y="499" fill="#252726" font-size="12" font-weight="400">delivery_url</text>
+<text x="360" y="517" fill="#252726" font-size="12" font-weight="400">delivered_at</text>
+<text x="360" y="535" fill="#252726" font-size="12" font-weight="400">task_url</text>
+<text x="360" y="553" fill="#252726" font-size="12" font-weight="400">created_at</text>
+<text x="360" y="571" fill="#252726" font-size="12" font-weight="400">updated_at</text>
+<rect x="350" y="640" width="300" height="160" rx="6" fill="#FFFFFF" stroke="#065FD8" stroke-width="2"/>
+<rect x="350" y="640" width="300" height="28" rx="6" fill="#065FD8"/>
+<rect x="350" y="662" width="300" height="6" fill="#065FD8"/>
+<text x="360" y="659" fill="#F4F4F4" font-weight="700" font-size="14">request_events</text>
+<text x="360" y="681" fill="#252726" font-size="12" font-weight="700">id  PK</text>
+<text x="360" y="699" fill="#252726" font-size="12" font-weight="700">request_id  FK</text>
+<text x="360" y="717" fill="#252726" font-size="12" font-weight="400">from_status</text>
+<text x="360" y="735" fill="#252726" font-size="12" font-weight="400">to_status</text>
+<text x="360" y="753" fill="#252726" font-size="12" font-weight="400">note</text>
+<text x="360" y="771" fill="#252726" font-size="12" font-weight="400">actor</text>
+<text x="360" y="789" fill="#252726" font-size="12" font-weight="400">created_at</text>
+<rect x="800" y="80" width="320" height="304" rx="6" fill="#FFFFFF" stroke="#00863D" stroke-width="2"/>
+<rect x="800" y="80" width="320" height="28" rx="6" fill="#00863D"/>
+<rect x="800" y="102" width="320" height="6" fill="#00863D"/>
+<text x="810" y="99" fill="#F4F4F4" font-weight="700" font-size="14">feedback_invites</text>
+<text x="810" y="121" fill="#252726" font-size="12" font-weight="700">id  PK</text>
+<text x="810" y="139" fill="#252726" font-size="12" font-weight="400">token  UNIQUE</text>
+<text x="810" y="157" fill="#252726" font-size="12" font-weight="700">request_id  (soft reference, no FK)</text>
+<text x="810" y="175" fill="#252726" font-size="12" font-weight="400">public_code</text>
+<text x="810" y="193" fill="#252726" font-size="12" font-weight="400">request_title</text>
+<text x="810" y="211" fill="#252726" font-size="12" font-weight="400">type_label</text>
+<text x="810" y="229" fill="#252726" font-size="12" font-weight="400">diretoria</text>
+<text x="810" y="247" fill="#252726" font-size="12" font-weight="400">delivery_url</text>
+<text x="810" y="265" fill="#252726" font-size="12" font-weight="400">needed_by</text>
+<text x="810" y="283" fill="#252726" font-size="12" font-weight="400">delivered_at</text>
+<text x="810" y="301" fill="#252726" font-size="12" font-weight="400">recipient_label</text>
+<text x="810" y="319" fill="#252726" font-size="12" font-weight="400">is_requester</text>
+<text x="810" y="337" fill="#252726" font-size="12" font-weight="400">expires_at</text>
+<text x="810" y="355" fill="#252726" font-size="12" font-weight="400">used_at</text>
+<text x="810" y="373" fill="#252726" font-size="12" font-weight="400">created_at</text>
+<rect x="800" y="430" width="320" height="196" rx="6" fill="#FFFFFF" stroke="#00863D" stroke-width="2"/>
+<rect x="800" y="430" width="320" height="28" rx="6" fill="#00863D"/>
+<rect x="800" y="452" width="320" height="6" fill="#00863D"/>
+<text x="810" y="449" fill="#F4F4F4" font-weight="700" font-size="14">feedback_responses</text>
+<text x="810" y="471" fill="#252726" font-size="12" font-weight="700">id  PK</text>
+<text x="810" y="489" fill="#252726" font-size="12" font-weight="700">invite_id  FK  UNIQUE</text>
+<text x="810" y="507" fill="#252726" font-size="12" font-weight="400">rating_tone</text>
+<text x="810" y="525" fill="#252726" font-size="12" font-weight="400">rating_quality</text>
+<text x="810" y="543" fill="#252726" font-size="12" font-weight="400">rating_process</text>
+<text x="810" y="561" fill="#252726" font-size="12" font-weight="400">rating_usefulness</text>
+<text x="810" y="579" fill="#252726" font-size="12" font-weight="400">outcome</text>
+<text x="810" y="597" fill="#252726" font-size="12" font-weight="400">comment</text>
+<text x="810" y="615" fill="#252726" font-size="12" font-weight="400">created_at</text>
+<path d="M350 207.0 H315 V117.0 H280" fill="none" stroke="#252726" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M350 441.0 H325 V212.0 H280" fill="none" stroke="#252726" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M350 225.0 H305 V307.0 H280" fill="none" stroke="#252726" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M30 480.0 H14 V307.0 H30" fill="none" stroke="#252726" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M350 695.0 H335 V121.0 H350" fill="none" stroke="#252726" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M1120 485.0 H1138 V117.0 H1120" fill="none" stroke="#252726" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M800 153.0 H735 V117.0 H650" fill="none" stroke="#FB8C0A" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<text x="664" y="109.0" fill="#FB8C0A" font-size="12" font-weight="700">soft reference (ADR-3)</text>
+</svg>
