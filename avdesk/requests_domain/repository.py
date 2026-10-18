@@ -101,7 +101,7 @@ def _to_request(row) -> Request:
         id=row["id"], public_code=row["public_code"], tracking_token=row["tracking_token"], briefing=briefing,
         status=Status(row["status"]), rush=bool(row["rush"]), briefing_score=row["briefing_score"],
         created_at=_datetime(row["created_at"]), updated_at=_datetime(row["updated_at"]),
-        analyst_id=row["analyst_id"], accepted_at=_datetime(row["accepted_at"]),
+        analyst_id=row["analyst_id"], accepted_at=_datetime(row["accepted_at"]), review_url=row["review_url"],
         delivery_url=row["delivery_url"], delivered_at=_datetime(row["delivered_at"]), task_url=row["task_url"],
     )
 
@@ -181,7 +181,7 @@ class SqliteRequestRepository(RequestReader, RequestWriter):
             conn.execute(f"UPDATE requests SET {assignments}, rush = ?, briefing_score = ?, updated_at = ? WHERE id = ?",
                          [*_briefing_values(briefing), int(rush), score, _iso(at), request_id])
 
-    _TRANSITION_FIELDS = frozenset({"analyst_id", "accepted_at", "delivery_url", "delivered_at"})
+    _TRANSITION_FIELDS = frozenset({"analyst_id", "accepted_at", "review_url", "delivery_url", "delivered_at"})
 
     def apply_transition(self, request_id: int, expected_from: Status, to_status: Status, fields: dict,
                          note: str, actor: str, at: datetime) -> None:

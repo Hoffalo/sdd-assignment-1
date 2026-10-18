@@ -83,7 +83,8 @@ def perform(request_id):
     form = request.form
     try:
         requests.perform(request_id, form.get("action", ""), actor=ADMIN_ACTOR, note=form.get("note", ""),
-                         analyst_id=parse_int(form.get("analyst_id")), delivery_url=form.get("delivery_url", ""))
+                         analyst_id=parse_int(form.get("analyst_id")), review_url=form.get("review_url", ""),
+                         delivery_url=form.get("delivery_url", ""))
         flash("Status atualizado.")
     except MissingInput as error:
         flash(error.message, "error")

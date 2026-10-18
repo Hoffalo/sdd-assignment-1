@@ -1,6 +1,47 @@
 {% extends "base.html" %}
 {% from "_macros.html" import csrf, status_badge %}
 {% block title %}{{ tracked.public_code }}{% endblock %}
+{% macro action_fields(name) %}
+  {% if name == "accept" %}
+    <div class="field">
+      <label for="analyst_id" class="required">Quem produz</label>
+      <select id="analyst_id" name="analyst_id">
+        <option value="">Escolha…</option>
+        {% for a in catalog.analysts %}
+          <option value="{{ a.id }}">{{ a.name }} ({{ workload[a.id] }} em aberto{% if workload[a.id] >= threshold %}, carga alta{% endif %})</option>
+        {% endfor %}
+      </select>
+    </div>
+  {% elif name == "request_info" %}
+    <div class="field">
+      <label for="note-request_info" class="required">O que falta no briefing?</label>
+      <span class="help">Quem pediu verá esta mensagem e poderá completar o briefing.</span>
+      <textarea id="note-request_info" name="note"></textarea>
+    </div>
+  {% elif name == "decline" %}
+    <div class="field">
+      <label for="note-decline" class="required">Por que o pedido foi recusado?</label>
+      <span class="help">Quem pediu verá esta mensagem.</span>
+      <textarea id="note-decline" name="note"></textarea>
+    </div>
+  {% elif name == "send_to_review" %}
+    <div class="field">
+      <label for="review_url" class="required">Link de revisão do Frame.io</label>
+      <span class="help">Aparece na página de acompanhamento de quem pediu.</span>
+      <input id="review_url" name="review_url" type="url" placeholder="https://f.io/…">
+    </div>
+  {% elif name == "deliver" %}
+    <div class="field">
+      <label for="delivery_url" class="required">Link do Drive com o arquivo final</label>
+      <input id="delivery_url" name="delivery_url" type="url">
+    </div>
+  {% else %}
+    <div class="field">
+      <label for="note-{{ name }}">Observação (opcional)</label>
+      <input id="note-{{ name }}" name="note">
+    </div>
+  {% endif %}
+{% endmacro %}
 {% block content %}
 {% set briefing = tracked.briefing %}
 <p class="help"><a href="{{ url_for('admin.inbox') }}">← Pedidos</a> · {{ tracked.public_code }}</p>
@@ -12,40 +53,26 @@
 
 <section class="card">
   <h3>Ações</h3>
+  <p class="help">Ações que precisam de informação abrem um formulário ao clicar.</p>
   <div class="actions">
     {% for action in actions %}
-      <form method="post" action="{{ url_for('admin.perform', request_id=tracked.id) }}">
-        {{ csrf() }}
-        <input type="hidden" name="action" value="{{ action.name }}">
-        {% if action.name == "accept" %}
-          <div class="field">
-            <label for="analyst_id">Quem produz</label>
-            <select id="analyst_id" name="analyst_id">
-              <option value="">Escolha…</option>
-              {% for a in catalog.analysts %}
-                <option value="{{ a.id }}">{{ a.name }} ({{ workload[a.id] }} em aberto{% if workload[a.id] >= threshold %}, carga alta{% endif %})</option>
-              {% endfor %}
-            </select>
-          </div>
-        {% elif action.name == "deliver" %}
-          <div class="field">
-            <label for="delivery_url">Link do Drive com o arquivo final</label>
-            <input id="delivery_url" name="delivery_url" type="url">
-          </div>
-        {% endif %}
-        {% if action.name in ("request_info", "decline") %}
-          <div class="field">
-            <label for="note-{{ action.name }}" class="required">Mensagem para quem pediu</label>
-            <textarea id="note-{{ action.name }}" name="note"></textarea>
-          </div>
-        {% elif action.name in ("cancel", "reopen", "request_changes") %}
-          <div class="field">
-            <label for="note-{{ action.name }}">Observação</label>
-            <input id="note-{{ action.name }}" name="note">
-          </div>
-        {% endif %}
-        <button type="submit"{% if action.name in ("decline", "cancel") %} class="button-danger"{% endif %}>{{ action.label }}</button>
-      </form>
+      {% if action.name in ("start_production", "close") %}
+        <form method="post" action="{{ url_for('admin.perform', request_id=tracked.id) }}">
+          {{ csrf() }}
+          <input type="hidden" name="action" value="{{ action.name }}">
+          <button type="submit">{{ action.label }}</button>
+        </form>
+      {% else %}
+        <details class="action">
+          <summary>{{ action.label }}</summary>
+          <form method="post" action="{{ url_for('admin.perform', request_id=tracked.id) }}">
+            {{ csrf() }}
+            <input type="hidden" name="action" value="{{ action.name }}">
+            {{ action_fields(action.name) }}
+            <button type="submit"{% if action.name in ("decline", "cancel") %} class="button-danger"{% endif %}>Confirmar</button>
+          </form>
+        </details>
+      {% endif %}
     {% else %}
       <p>Nenhuma ação disponível: o pedido está encerrado.</p>
     {% endfor %}
@@ -94,6 +121,7 @@
   {% if tracked.rush %}<p class="notice notice-rush"><strong>Prazo curto:</strong> {{ briefing.rush_reason }}</p>{% endif %}
   {% set analyst = catalog.analyst(tracked.analyst_id) %}
   {% if analyst %}<p><strong>Responsável:</strong> {{ analyst.name }}</p>{% endif %}
+  {% if tracked.review_url %}<p><strong>Revisão (Frame.io):</strong> <a href="{{ tracked.review_url }}" target="_blank" rel="noopener">{{ tracked.review_url }}</a></p>{% endif %}
   {% if tracked.delivery_url %}<p><strong>Entrega:</strong> <a href="{{ tracked.delivery_url }}" rel="noopener">{{ tracked.delivery_url }}</a></p>{% endif %}
   <dl>
     {% for q in catalog.questions_for(briefing.type_code) %}

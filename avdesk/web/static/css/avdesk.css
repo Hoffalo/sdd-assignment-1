@@ -145,6 +145,9 @@ th { font-size: .85rem; text-transform: uppercase; color: #555; }
 
 .actions { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .actions form { margin: 0; }
+.action { background: var(--luz-brasa); border-radius: var(--radius); padding: 10px 14px; }
+.action summary { cursor: pointer; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.action[open] summary { margin-bottom: 10px; }
 
 .bar-row { display: grid; grid-template-columns: 160px 1fr 48px; gap: 8px; align-items: center; margin: 4px 0; }
 .bar { height: 14px; background: var(--azul-vivido); border-radius: 3px; }

@@ -125,6 +125,7 @@ class Request:
     updated_at: datetime
     analyst_id: int | None = None
     accepted_at: datetime | None = None
+    review_url: str | None = None
     delivery_url: str | None = None
     delivered_at: datetime | None = None
     task_url: str | None = None

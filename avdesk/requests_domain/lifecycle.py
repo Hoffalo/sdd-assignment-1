@@ -89,6 +89,15 @@ class AcceptRequest(StatusChange):
         return {"analyst_id": int(self.inputs["analyst_id"]), "accepted_at": now}
 
 
+class SendToReview(StatusChange):
+    def check_inputs(self) -> None:
+        if not is_http_url(self.inputs.get("review_url", "")):
+            raise MissingInput("review_url", "Cole o link de revisão do Frame.io.")
+
+    def fields(self, now: datetime) -> dict:
+        return {"review_url": self.inputs["review_url"].strip()}
+
+
 class DeliverRequest(StatusChange):
     def check_inputs(self) -> None:
         if not is_http_url(self.inputs.get("delivery_url", "")):
@@ -115,7 +124,7 @@ ACTIONS: tuple[Action, ...] = (
     Action("resubmit", "Reenviar briefing", StatusChange, frozenset({S.NEEDS_INFO}), S.SUBMITTED, by_requester=True),
     Action("decline", "Recusar", StatusChange, frozenset({S.SUBMITTED, S.NEEDS_INFO}), S.DECLINED),
     Action("start_production", "Iniciar produção", StatusChange, frozenset({S.ACCEPTED}), S.IN_PRODUCTION),
-    Action("send_to_review", "Enviar para revisão", StatusChange, frozenset({S.IN_PRODUCTION}), S.IN_REVIEW),
+    Action("send_to_review", "Enviar para revisão", SendToReview, frozenset({S.IN_PRODUCTION}), S.IN_REVIEW),
     Action("request_changes", "Pedir ajustes", StatusChange, frozenset({S.IN_REVIEW}), S.IN_PRODUCTION),
     Action("deliver", "Marcar como entregue", DeliverRequest, frozenset({S.IN_PRODUCTION, S.IN_REVIEW}), S.DELIVERED),
     Action("close", "Concluir", StatusChange, frozenset({S.DELIVERED}), S.CLOSED),

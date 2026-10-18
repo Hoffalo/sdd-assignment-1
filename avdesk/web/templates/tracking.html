@@ -15,6 +15,15 @@
   <p class="help">Guarde o link desta página: só quem tem o link consegue ver o pedido.</p>
 </section>
 
+{% if tracked.status.value == "in_review" and tracked.review_url %}
+  <section class="card review">
+    <h2>Sua vez de revisar</h2>
+    <p>Uma nova versão do vídeo está pronta. Assista e deixe seus comentários direto no Frame.io, no ponto exato do vídeo.</p>
+    <p><a class="button" href="{{ tracked.review_url }}" target="_blank" rel="noopener">Assistir e comentar no Frame.io</a></p>
+    <p class="help">O Frame.io abre em uma nova aba. Ele não permite ser exibido dentro de outros sites, por isso o link.</p>
+  </section>
+{% endif %}
+
 <h2>Histórico</h2>
 <ol class="timeline">
   {% for event in timeline %}
