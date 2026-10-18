@@ -68,7 +68,7 @@ The repository [README](../README.md) is part of this submission. It covers:
 - the coverage command and result;
 - the passing `container/run.sh` output.
 
-Each code directory has its own README, and `docs/GUIDE.md` explains the whole system top to bottom.
+Each code directory has its own README.
 
 ## 6. Testing
 

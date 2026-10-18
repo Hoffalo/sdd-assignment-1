@@ -6,7 +6,7 @@ Before AV Desk, video requests arrived through scattered Slack threads: vague as
 
 The UI is in Brazilian Portuguese; code and documentation are in English.
 
-> New to the project? Read [docs/GUIDE.md](docs/GUIDE.md) top to bottom. Each code directory also has its own README.
+> Each code directory has its own README explaining its files and design decisions.
 
 ## Quick start
 
@@ -216,7 +216,6 @@ Note for Windows (Git Bash): the script calls `mktemp -t sdd-check`, which GNU `
 | Document | What it gives you |
 |---|---|
 | [docs/REPORT.md](docs/REPORT.md) | The assignment report: SDLC and goals, diagrams, testing, AI disclosure |
-| [docs/GUIDE.md](docs/GUIDE.md) | The whole project explained top to bottom, including problems met along the way |
 | [docs/DESIGN_NOTES.md](docs/DESIGN_NOTES.md) | Problem, reason and trade-off for every pattern and principle |
 | [ADR.md](ADR.md) | Formal architecture decision records |
 | [AI_USAGE.md](AI_USAGE.md) | How AI was used, prompt by prompt |
