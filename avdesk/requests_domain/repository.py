@@ -116,7 +116,8 @@ class SqliteCatalogReader(CatalogReader):
                           for r in conn.execute("SELECT * FROM request_types ORDER BY position"))
             questions = tuple(
                 Question(r["key"], r["type_code"], r["section"], r["label"], r["kind"],
-                         tuple(json.loads(r["options_json"])), bool(r["required"]), r["help"], r["position"])
+                         tuple(json.loads(r["options_json"])), bool(r["required"]), r["help"], r["position"],
+                         r["depends_on"], r["depends_value"])
                 for r in conn.execute("SELECT * FROM briefing_questions ORDER BY position, rowid"))
             diretorias = tuple(Diretoria(r["id"], r["name"]) for r in conn.execute("SELECT * FROM diretorias ORDER BY id"))
             analysts = tuple(Analyst(r["id"], r["name"]) for r in conn.execute("SELECT * FROM analysts ORDER BY id"))

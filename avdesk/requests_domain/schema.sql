@@ -2,6 +2,8 @@
 -- Fixed columns hold what rules, filters and metrics read; the type-dependent
 -- briefing answers live in answers_json because the question set changes per
 -- request type and is edited as seed data, not as schema.
+-- This file always describes the latest shape. Columns added after the first
+-- release also appear in db.MIGRATIONS, which upgrades older databases.
 
 CREATE TABLE IF NOT EXISTS diretorias (
     id    INTEGER PRIMARY KEY,
@@ -30,7 +32,9 @@ CREATE TABLE IF NOT EXISTS briefing_questions (
     kind          TEXT NOT NULL CHECK (kind IN ('text', 'textarea', 'url', 'date', 'choice', 'multichoice', 'yesno')),
     options_json  TEXT NOT NULL DEFAULT '[]',
     required      INTEGER NOT NULL DEFAULT 0 CHECK (required IN (0, 1)),
-    position      INTEGER NOT NULL
+    position      INTEGER NOT NULL,
+    depends_on    TEXT,
+    depends_value TEXT
 );
 
 CREATE TABLE IF NOT EXISTS requests (
@@ -55,6 +59,7 @@ CREATE TABLE IF NOT EXISTS requests (
                                                       'in_review', 'delivered', 'closed', 'declined', 'cancelled')),
     analyst_id        INTEGER REFERENCES analysts (id),
     accepted_at       TEXT,
+    review_url        TEXT,
     delivery_url      TEXT,
     delivered_at      TEXT,
     task_url          TEXT,

@@ -11,7 +11,7 @@ from flask import Flask
 
 from avdesk.clock import Clock, SystemClock
 from avdesk.config import Config
-from avdesk.db import Database, create_schema, load_seed, seed_if_empty
+from avdesk.db import Database, create_schema, load_reference_data, load_seed
 from avdesk.feedback_domain.events import FeedbackEventSubject
 from avdesk.feedback_domain.facade import FeedbackFacade
 from avdesk.feedback_domain.repository import SqliteFeedbackRepository
@@ -86,7 +86,7 @@ def create_app(config: Config, clock: Clock | None = None, tokens: TokenGenerato
                tracker: TaskTracker | None = None) -> Flask:
     database = Database(config.database_path)
     create_schema(database)
-    seed_if_empty(database, load_seed())
+    load_reference_data(database, load_seed())
 
     app = Flask(__name__, template_folder="web/templates", static_folder="web/static")
     app.secret_key = config.secret_key
