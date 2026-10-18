@@ -201,7 +201,7 @@ Startup does three things to the database, and each is safe to repeat.
 
 **3. Load reference data.** [seed.json](../seed.json) holds the reference data, and it is treated in two different ways, because of who points at it:
 
-- **Request types and briefing questions** are configuration that the AV manager will keep refining (the `[A CONFIRMAR]` items). They follow `seed.json` on every boot: each row is matched by its natural key (`code`, `key`) and updated, and questions that disappeared from the file are removed. Nothing stores a reference to a question row, so removing one is safe; types are never removed, because requests point at them.
+- **Request types and briefing questions** are configuration that the AV manager will keep refining (the question set is still a draft). They follow `seed.json` on every boot: each row is matched by its natural key (`code`, `key`) and updated, and questions that disappeared from the file are removed. Nothing stores a reference to a question row, so removing one is safe; types are never removed, because requests point at them.
 - **Diretorias and analysts** are seeded once, into empty tables, and never rewritten: requests point at them by id, so renaming or deleting them from a file could break existing requests.
 
 Booting twice therefore changes nothing. That property is called **idempotent**, and the brief's checker tests it by restarting the container and comparing row counts. The opposite mistakes, both explicitly warned against in the brief, would be inserting the seed on every boot (rows double) or dropping tables and recreating them (every user's data wiped on restart).
@@ -281,7 +281,7 @@ Conference content is different, because the COO reviews it with non-negotiable 
 
 `lead_time_policy_for` picks one; callers just call `assess()` and never branch. Both policies return the same kind of result, which is the **Liskov Substitution Principle** (the L): any version of a contract must work wherever the contract is expected. The smell it prevents is **Object-Orientation Abusers** (the slides' penguin that is a bird but crashes when asked to fly).
 
-In practice, with today = Friday 9 October and a teaser needing 10 business days: a deadline of Friday 16 October gives 5 days, so it is rush and the earliest realistic date is Friday 23 October.
+In practice, with today = Friday 9 October and a teaser needing 10 business days (the confirmed minimums are teaser 10, institucional 7, redes sociais 5, outro 10; COO buffer 3): a deadline of Friday 16 October gives 5 days, so it is rush and the earliest realistic date is Friday 23 October.
 
 ### 8.5 Saving: `repository.py`
 
@@ -443,7 +443,7 @@ A **foreign key** is a database rule saying "this column must point at an existi
 |---|---|---|
 | `diretorias` | The 8 diretorias | Seeded |
 | `analysts` | People who produce videos | Seeded with generic names, never real people |
-| `request_types` | The 4 types and their lead times | Synced from `seed.json` on every boot (never deleted); lead times are placeholders `[A CONFIRMAR]` |
+| `request_types` | The 4 types and their lead times | Synced from `seed.json` on every boot (never deleted); lead times confirmed: teaser 10, institucional 7, redes sociais 5, outro 10 business days |
 | `briefing_questions` | The 31 questions | Synced from `seed.json` on every boot; options stored as JSON; `depends_on`/`depends_value` hold a follow-up's trigger |
 | `requests` | One row per request | Fixed columns for what rules and metrics read (including `review_url` and `delivery_url`); `answers_json` for the rest; `CHECK` constraints keep status, score and booleans in range |
 | `request_events` | The timeline | Foreign key to `requests` |

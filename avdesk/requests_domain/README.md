@@ -45,7 +45,7 @@ A question with `depends_on` and `depends_value` is a follow-up: `Question.is_sh
 | `StandardLeadTime(min_days)` | the type's minimum | the requester's date |
 | `ConferenceLeadTime(min_days, coo_buffer_days)` | minimum + COO buffer | requester's date minus the buffer |
 
-Too little notice does **not** block a request. It flags it as rush, asks for a reason, and shows the earliest realistic date. The manager can still accept it, and the rush share appears in metrics. Minimum lead times per type and the COO buffer are placeholders marked `[A CONFIRMAR]`.
+Too little notice does **not** block a request. It flags it as rush, asks for a reason, and shows the earliest realistic date. The manager can still accept it, and the rush share appears in metrics. Minimum lead times, confirmed by the AV manager: teaser 10, institucional 7, redes sociais 5, outro 10 business days; COO buffer 3 business days.
 
 ### The lifecycle
 

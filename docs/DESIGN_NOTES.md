@@ -63,11 +63,59 @@ Also present without being extra classes: the Repository idea (reader/writer ABC
 - The admin page opens a separate form per action, replacing two identical message boxes.
 - Because these changes had to reach a database already in use, request types and questions now sync from `seed.json` on every start, and new columns arrive through numbered migrations (`db.MIGRATIONS`, tracked in `PRAGMA user_version`).
 
-## 6. Open items `[A CONFIRMAR]`
+## 6. Confirmed by the AV manager (2026-10-18)
 
-1. Real minimum lead time per type (`seed.json`, `request_types`). Placeholders: teaser 10, institucional 20, redes sociais 7, outro 10 business days.
-2. COO review buffer (`COO_REVIEW_BUFFER_DAYS`, default 3).
-3. The question set per type (`seed.json`, `briefing_questions`), drafted from the handoff.
-4. Diretorias: 8 were given, the handoff mentioned 9.
-5. Whether "Vídeo para redes sociais" means only videos *outside* the editorial calendar (the landing page currently says so and sends calendar posts to ClickUp).
-6. ClickUp field mapping (priority, tags, assignee) once the real list exists.
+- Minimum lead times: teaser 10, institucional 7, redes sociais 5, outro 10 business days.
+- COO review buffer for conference content: 3 business days.
+- "Vídeo para redes sociais" means social videos **outside** the editorial calendar; calendar posts keep their ClickUp flow, as the landing page says.
+
+## 7. Open items
+
+1. The question set below is a draft built from the handoff and user testing; it still needs the AV team's validation.
+2. Diretorias: 8 are seeded (Comunicação, Tech, Gente e Gestão, Conferências, Rede, Impacto Social, Administrativo, Relações Corporativas); the handoff mentioned 9, so one may be missing.
+3. ClickUp field mapping (priority, tags, assignee) and real credentials, postponed.
+
+## 8. The current question set
+
+Every request asks for the fixed fields first: name, `@gobrasa.org` e-mail, diretoria, type (and, for redes sociais or outro, a free-text detail), title, campanha, whether it is conference content, due date and its reason, and a reason when the deadline is short. Then the questions below. "Follow-up" means the question appears only after the answer named.
+
+**Every type**
+
+| Section | Question | Kind | Required |
+|---|---|---|---|
+| Objetivo e mensagem | Depois de assistir, o que a pessoa deve sentir ou fazer? | long text | yes |
+| | Qual é a mensagem principal do vídeo? | long text | yes |
+| | Existe uma chamada para ação? | text | no |
+| Público e tom | Para quem é o vídeo? (pré-universitários, universitários no exterior, bolsistas e alumni, parceiros e doadores) | multi-select | yes |
+| | Qual é o tom do vídeo? (Inspirador, Didático, Institucional, Outro) | choice | yes |
+| | Descreva o tom que você imagina (follow-up: tom = Outro) | long text | yes |
+| | Mande pelo menos uma referência do tom que você imagina | long text | yes |
+| Onde e como | Onde o vídeo será usado? (Portal BRASA, YouTube, Instagram, TikTok, LinkedIn, exibido em conferência, uso interno) | multi-select | yes |
+| | Em qual conta do Instagram o vídeo será publicado? (follow-up: Instagram) | choice of 6 handles | yes |
+| | Contas convidadas para collab (follow-up: Instagram) | multi-select of 6 handles | no |
+| | Em quais formatos? (16:9, 9:16, 1:1) | multi-select | yes |
+| | Duração estimada | text | no |
+| Material existente | Já existe roteiro? Cole o link | link | no |
+| | Link da pasta com imagens e vídeos que já existem | link | no |
+| | Quem aparece em câmera? (nome completo — cargo, para as legendas) | long text | no |
+| | Alguma preferência de música? | text | no |
+| | Logos ou materiais de parceiros que precisam aparecer | long text | no |
+| Aprovações e avaliação | Quem precisa aprovar o vídeo? | text | yes |
+| | Uma agência externa está envolvida? | yes/no | no |
+| | Além de você, quem deve avaliar a entrega? (one name per line; each gets a feedback link) | long text | no |
+| | Algo mais que a gente precisa saber? | long text | no |
+
+**Per type**
+
+| Type | Question | Kind | Required |
+|---|---|---|---|
+| Teaser | O que o teaser anuncia? | text | yes |
+| | Quando acontece a revelação ou o lançamento? | date | no |
+| | O que pode e o que não pode ser revelado ainda? | long text | no |
+| Institucional | Que história ou jornada o vídeo deve contar? | long text | yes |
+| | Precisa de animação ou motion graphics? | yes/no | no |
+| | Quem faz a locução? | text | no |
+| Redes sociais | Qual é o gancho dos primeiros segundos? | text | no |
+| | Faz parte de uma série? | yes/no | no |
+| | Rascunho da legenda do post | long text | no |
+| Outro | Por que esse pedido não se encaixa nos outros tipos? | long text | yes |

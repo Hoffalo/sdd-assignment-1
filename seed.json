@@ -1,5 +1,5 @@
 {
-  "_nota": "Reference data loaded on first boot only into empty tables. Lead times and the question set are drafts marked [A CONFIRMAR] until the AV manager validates them.",
+  "_nota": "Reference data. request_types and briefing_questions follow this file on every boot; diretorias and analysts are loaded once into empty tables. Lead times confirmed by the AV manager on 2026-10-18; the question set is still a draft until validated.",
   "diretorias": [
     {"name": "Comunicação"},
     {"name": "Tech"},
@@ -17,8 +17,8 @@
   ],
   "request_types": [
     {"code": "teaser", "label": "Teaser", "min_lead_business_days": 10, "detail_label": null, "position": 1},
-    {"code": "institucional", "label": "Vídeo institucional", "min_lead_business_days": 20, "detail_label": null, "position": 2},
-    {"code": "redes_sociais", "label": "Vídeo para redes sociais", "min_lead_business_days": 7, "detail_label": "Qual formato? (ex.: reel, short, vlog para o YouTube)", "position": 3},
+    {"code": "institucional", "label": "Vídeo institucional", "min_lead_business_days": 7, "detail_label": null, "position": 2},
+    {"code": "redes_sociais", "label": "Vídeo para redes sociais", "min_lead_business_days": 5, "detail_label": "Qual formato? (ex.: reel, short, vlog para o YouTube)", "position": 3},
     {"code": "outro", "label": "Outro", "min_lead_business_days": 10, "detail_label": "Descreva o que você precisa", "position": 4}
   ],
   "briefing_questions": [
