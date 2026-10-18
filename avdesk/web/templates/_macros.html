@@ -13,7 +13,8 @@
 {% macro question(q, briefing, errors, prefix) -%}
   {% set name = prefix ~ q.key %}
   {% set value = briefing.answers.get(q.key, "") %}
-  <div class="field{% if errors.get(q.key) %} has-error{% endif %}" data-question="{{ q.key }}">
+  <div class="field{% if errors.get(q.key) %} has-error{% endif %}" data-question="{{ q.key }}"
+       {%- if q.depends_on %} data-depends-on="{{ prefix ~ q.depends_on }}" data-depends-value="{{ q.depends_value }}"{% endif %}>
     {% if q.kind in ("multichoice", "yesno") %}
       <span class="label{% if q.required %} required{% endif %}">{{ q.label }}</span>
     {% else %}

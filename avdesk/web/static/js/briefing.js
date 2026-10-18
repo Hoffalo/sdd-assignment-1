@@ -29,6 +29,21 @@
     showSectionsFor(type ? type.value : null);
   }
 
+  function triggerMatches(fieldName, expected) {
+    const inputs = Array.from(form.querySelectorAll('[name="' + fieldName + '"]'));
+    return inputs.some(function (input) {
+      if (input.type === "checkbox" || input.type === "radio") return input.checked && input.value === expected;
+      return input.value === expected;
+    });
+  }
+
+  // Mirrors Question.is_shown on the server, which stays the authority on submit.
+  function updateFollowUps() {
+    form.querySelectorAll("[data-depends-on]").forEach(function (block) {
+      block.hidden = !triggerMatches(block.dataset.dependsOn, block.dataset.dependsValue);
+    });
+  }
+
   function isAnswered(block) {
     const inputs = block.querySelectorAll("input, select, textarea");
     return Array.from(inputs).some(function (input) {
@@ -39,7 +54,7 @@
 
   function updateScore() {
     const visible = Array.from(form.querySelectorAll("[data-question]"))
-      .filter(function (block) { return !block.closest("fieldset").hidden; });
+      .filter(function (block) { return !block.hidden && !block.closest("fieldset").hidden; });
     const answered = visible.filter(isAnswered).length;
     const score = visible.length ? Math.round((100 * answered) / visible.length) : 0;
     document.getElementById("score-value").textContent = score + "%";
@@ -75,11 +90,13 @@
       updateTypeDetail();
       updateDeadline();
     }
+    updateFollowUps();
     updateScore();
   });
   form.addEventListener("input", updateScore);
 
   updateTypeDetail();
+  updateFollowUps();
   updateDeadline();
   updateScore();
 })();
