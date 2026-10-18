@@ -2,7 +2,7 @@ import pytest
 
 from avdesk.composition import create_app
 from avdesk.config import Config
-from avdesk.db import Database, create_schema, load_seed, seed_if_empty
+from avdesk.db import Database, create_schema, load_reference_data, load_seed
 from tests.doubles import FixedClock, SequentialTokens
 
 ADMIN_PASSWORD = "test-admin"
@@ -27,7 +27,7 @@ def migrated_db(tmp_path):
 
 @pytest.fixture
 def seeded_db(migrated_db):
-    seed_if_empty(migrated_db, load_seed())
+    load_reference_data(migrated_db, load_seed())
     return migrated_db
 
 
