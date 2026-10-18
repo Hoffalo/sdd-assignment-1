@@ -122,7 +122,7 @@ class BriefingValidator:
 
     @staticmethod
     def _check_answers(briefing: Briefing, catalog: Catalog, errors: dict[str, str]) -> None:
-        for question in catalog.questions_for(briefing.type_code):
+        for question in catalog.questions_for(briefing.type_code, briefing.answers):
             value = briefing.answers.get(question.key)
             if is_blank(value):
                 if question.required:

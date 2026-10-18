@@ -2,8 +2,9 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
+from typing import Mapping
 
-from avdesk.requests_domain.briefing import Briefing
+from avdesk.requests_domain.briefing import Answer, Briefing
 
 
 class Status(StrEnum):
@@ -60,9 +61,20 @@ class Question:
     required: bool
     help: str = ""
     position: int = 0
+    depends_on: str | None = None
+    depends_value: str | None = None
 
     def applies_to(self, type_code: str) -> bool:
         return self.type_code is None or self.type_code == type_code
+
+    def is_shown(self, answers: Mapping[str, Answer]) -> bool:
+        """Follow-up questions appear only for the answer that makes them relevant."""
+        if self.depends_on is None:
+            return True
+        answer = answers.get(self.depends_on)
+        if isinstance(answer, tuple):
+            return self.depends_value in answer
+        return answer == self.depends_value
 
 
 @dataclass(frozen=True)
@@ -88,8 +100,10 @@ class Catalog:
     def type(self, code: str) -> RequestType | None:
         return next((t for t in self.types if t.code == code), None)
 
-    def questions_for(self, type_code: str) -> tuple[Question, ...]:
-        return tuple(q for q in self.questions if q.applies_to(type_code))
+    def questions_for(self, type_code: str, answers: Mapping[str, Answer] | None = None) -> tuple[Question, ...]:
+        """Questions of a type; with answers given, only those currently shown to the requester."""
+        return tuple(q for q in self.questions
+                     if q.applies_to(type_code) and (answers is None or q.is_shown(answers)))
 
     def diretoria(self, diretoria_id: int | None) -> Diretoria | None:
         return next((d for d in self.diretorias if d.id == diretoria_id), None)

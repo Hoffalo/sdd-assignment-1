@@ -22,7 +22,7 @@ class BriefingScorer:
     """
 
     def score(self, briefing: Briefing, catalog: Catalog) -> int:
-        questions = catalog.questions_for(briefing.type_code)
+        questions = catalog.questions_for(briefing.type_code, briefing.answers)
         if not questions:
             return 0
         answered = sum(not is_blank(briefing.answers.get(q.key)) for q in questions)
@@ -62,8 +62,8 @@ class BriefingIntake:
         return policy.assess(today, needed_by)
 
     def check(self, briefing: Briefing, catalog: Catalog) -> CheckedBriefing:
-        applicable = {q.key for q in catalog.questions_for(briefing.type_code)}
-        briefing = briefing.keep_answers(applicable)
+        shown = {q.key for q in catalog.questions_for(briefing.type_code, briefing.answers)}
+        briefing = briefing.keep_answers(shown)
         assessment = self.assess(catalog, briefing.type_code, briefing.needed_by, briefing.for_conference)
         errors = self._validator.validate(briefing, catalog, self._clock.today(), assessment)
         return CheckedBriefing(briefing, errors, assessment, self._scorer.score(briefing, catalog))

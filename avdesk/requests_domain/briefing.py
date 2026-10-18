@@ -36,7 +36,7 @@ class Briefing:
         return tuple(line.strip() for line in str(raw).splitlines() if line.strip())
 
     def keep_answers(self, keys: set[str]) -> "Briefing":
-        """Drops answers to questions of another type, e.g. after the requester switched type."""
+        """Drops answers the requester can no longer see: another type, or a follow-up whose trigger changed."""
         return replace(self, answers={k: v for k, v in self.answers.items() if k in keys})
 
 
@@ -96,6 +96,7 @@ class BriefingDirector:
         "tom": "Institucional",
         "referencia_tom": "Vídeo de abertura da conferência anterior.",
         "destinos": ("Instagram",),
+        "instagram_principal": "@gobrasa",
         "formatos": ("Vertical 9:16",),
         "aprovadores": "Diretoria de Comunicação",
     }
