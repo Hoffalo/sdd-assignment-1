@@ -6,43 +6,17 @@ round, so ConferenceLeadTime both demands more notice and pulls the team's
 working deadline earlier. Callers only see assess(), so adding a policy
 never touches them (OCP).
 
-Holidays are ignored on purpose (ADR-5 candidate): weekends are the only
-non-working days, which keeps the rule explainable to requesters.
+Every calendar day counts, weekends included, because BRASA's AV team works
+weekends too; holidays are not modelled either, for the same reason.
 """
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date, timedelta
 
-SATURDAY = 5
 
-
-def _is_business_day(day: date) -> bool:
-    return day.weekday() < SATURDAY
-
-
-def business_days_between(start: date, end: date) -> int:
-    """Working days available after start, up to and including end."""
-    count, day = 0, start
-    while day < end:
-        day += timedelta(days=1)
-        count += _is_business_day(day)
-    return count
-
-
-def add_business_days(start: date, days: int) -> date:
-    day = start
-    while days > 0:
-        day += timedelta(days=1)
-        days -= _is_business_day(day)
-    return day
-
-
-def subtract_business_days(end: date, days: int) -> date:
-    day = end
-    while days > 0:
-        day -= timedelta(days=1)
-        days -= _is_business_day(day)
-    return day
+def days_between(start: date, end: date) -> int:
+    """Days available after start, up to and including end; never negative."""
+    return max((end - start).days, 0)
 
 
 @dataclass(frozen=True)
@@ -68,9 +42,9 @@ class StandardLeadTime(LeadTimePolicy):
 
     def assess(self, today: date, needed_by: date) -> LeadTimeAssessment:
         return LeadTimeAssessment(
-            available_days=business_days_between(today, needed_by),
+            available_days=days_between(today, needed_by),
             required_days=self.min_days,
-            earliest_date=add_business_days(today, self.min_days),
+            earliest_date=today + timedelta(days=self.min_days),
             work_deadline=needed_by,
         )
 
@@ -83,10 +57,10 @@ class ConferenceLeadTime(LeadTimePolicy):
     def assess(self, today: date, needed_by: date) -> LeadTimeAssessment:
         required = self.min_days + self.coo_buffer_days
         return LeadTimeAssessment(
-            available_days=business_days_between(today, needed_by),
+            available_days=days_between(today, needed_by),
             required_days=required,
-            earliest_date=add_business_days(today, required),
-            work_deadline=subtract_business_days(needed_by, self.coo_buffer_days),
+            earliest_date=today + timedelta(days=required),
+            work_deadline=needed_by - timedelta(days=self.coo_buffer_days),
         )
 
 

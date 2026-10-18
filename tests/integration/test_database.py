@@ -96,6 +96,7 @@ def old_db(tmp_path):
     """A database created before the follow-up questions and review links existed."""
     database = Database(tmp_path / "old.sqlite3")
     with database.connect() as conn:
+        conn.execute("CREATE TABLE request_types (code TEXT PRIMARY KEY, min_lead_business_days INTEGER)")
         conn.execute("CREATE TABLE briefing_questions (key TEXT PRIMARY KEY)")
         conn.execute("CREATE TABLE requests (id INTEGER PRIMARY KEY, status TEXT)")
     return database
@@ -110,6 +111,12 @@ def test_an_old_database_gains_the_new_columns(old_db):
 
     assert {"depends_on", "depends_value"} <= columns(old_db, "briefing_questions") and \
            "review_url" in columns(old_db, "requests")
+
+
+def test_an_old_database_counts_lead_time_in_calendar_days(old_db):
+    create_schema(old_db)
+
+    assert "min_lead_days" in columns(old_db, "request_types")
 
 
 def test_upgrading_twice_is_harmless(old_db):

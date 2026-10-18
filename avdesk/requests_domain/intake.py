@@ -58,7 +58,7 @@ class BriefingIntake:
         today = self._clock.today()
         if request_type is None or needed_by is None or needed_by <= today:
             return None
-        policy = lead_time_policy_for(request_type.min_lead_business_days, for_conference, self._coo_buffer_days)
+        policy = lead_time_policy_for(request_type.min_lead_days, for_conference, self._coo_buffer_days)
         return policy.assess(today, needed_by)
 
     def check(self, briefing: Briefing, catalog: Catalog) -> CheckedBriefing:

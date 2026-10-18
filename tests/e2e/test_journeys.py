@@ -87,7 +87,7 @@ def test_instagram_without_a_primary_account_is_rejected(client):
 def test_deadline_check_explains_rush_live(client):
     result = client.get("/pedido/prazo?type_code=teaser&needed_by=2026-10-14").get_json()
 
-    assert (result["rush"], result["earliest_date"]) == (True, "23/10/2026")
+    assert (result["rush"], result["earliest_date"]) == (True, "19/10/2026")
 
 
 def test_requester_sees_the_frameio_link_while_in_review(app, client):

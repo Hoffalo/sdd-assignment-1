@@ -112,7 +112,7 @@ class SqliteCatalogReader(CatalogReader):
 
     def load(self) -> Catalog:
         with self._db.connect() as conn:
-            types = tuple(RequestType(r["code"], r["label"], r["min_lead_business_days"], r["detail_label"])
+            types = tuple(RequestType(r["code"], r["label"], r["min_lead_days"], r["detail_label"])
                           for r in conn.execute("SELECT * FROM request_types ORDER BY position"))
             questions = tuple(
                 Question(r["key"], r["type_code"], r["section"], r["label"], r["kind"],

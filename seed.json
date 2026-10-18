@@ -16,10 +16,10 @@
     {"name": "Analista AV 2"}
   ],
   "request_types": [
-    {"code": "teaser", "label": "Teaser", "min_lead_business_days": 10, "detail_label": null, "position": 1},
-    {"code": "institucional", "label": "Vídeo institucional", "min_lead_business_days": 7, "detail_label": null, "position": 2},
-    {"code": "redes_sociais", "label": "Vídeo para redes sociais", "min_lead_business_days": 5, "detail_label": "Qual formato? (ex.: reel, short, vlog para o YouTube)", "position": 3},
-    {"code": "outro", "label": "Outro", "min_lead_business_days": 10, "detail_label": "Descreva o que você precisa", "position": 4}
+    {"code": "teaser", "label": "Teaser", "min_lead_days": 10, "detail_label": null, "position": 1},
+    {"code": "institucional", "label": "Vídeo institucional", "min_lead_days": 7, "detail_label": null, "position": 2},
+    {"code": "redes_sociais", "label": "Vídeo para redes sociais", "min_lead_days": 5, "detail_label": "Qual formato? (ex.: reel, short, vlog para o YouTube)", "position": 3},
+    {"code": "outro", "label": "Outro", "min_lead_days": 10, "detail_label": "Descreva o que você precisa", "position": 4}
   ],
   "briefing_questions": [
     {"key": "objetivo", "type_code": null, "section": "Objetivo e mensagem", "label": "Depois de assistir, o que a pessoa deve sentir ou fazer?", "help": "Uma frase basta.", "kind": "textarea", "options_json": [], "required": 1, "position": 10, "depends_on": null, "depends_value": null},

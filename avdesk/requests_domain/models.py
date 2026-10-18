@@ -42,7 +42,7 @@ WORKLOAD_STATUSES = frozenset({Status.ACCEPTED, Status.IN_PRODUCTION, Status.IN_
 class RequestType:
     code: str
     label: str
-    min_lead_business_days: int
+    min_lead_days: int
     detail_label: str | None
 
     @property

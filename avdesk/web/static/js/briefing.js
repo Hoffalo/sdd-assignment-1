@@ -77,10 +77,10 @@
         notice.hidden = false;
         notice.classList.toggle("notice-rush", result.rush);
         notice.textContent = result.rush
-          ? "Prazo curto: esse tipo de vídeo pede " + result.required_days + " dias úteis e você deu " +
+          ? "Prazo curto: esse tipo de vídeo pede " + result.required_days + " dias e você deu " +
             result.available_days + ". A data mais realista é " + result.earliest_date +
             ". Você ainda pode enviar, explicando abaixo por que a data não pode mudar."
-          : "Prazo ok: " + result.available_days + " dias úteis até a entrega.";
+          : "Prazo ok: " + result.available_days + " dias até a entrega.";
       })
       .catch(function () { notice.hidden = true; });
   }

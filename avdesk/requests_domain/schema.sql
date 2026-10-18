@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS analysts (
 CREATE TABLE IF NOT EXISTS request_types (
     code                    TEXT PRIMARY KEY,
     label                   TEXT NOT NULL,
-    min_lead_business_days  INTEGER NOT NULL CHECK (min_lead_business_days >= 0),
+    min_lead_days           INTEGER NOT NULL CHECK (min_lead_days >= 0),
     detail_label            TEXT,
     position                INTEGER NOT NULL
 );

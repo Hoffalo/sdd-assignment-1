@@ -56,8 +56,8 @@ def test_short_deadline_with_reason_is_stored_as_rush(facade, director):
 
 
 def test_conference_content_needs_more_notice(facade):
-    plain = facade.assess_deadline("teaser", date(2026, 10, 23), for_conference=False)
-    conference = facade.assess_deadline("teaser", date(2026, 10, 23), for_conference=True)
+    plain = facade.assess_deadline("teaser", date(2026, 10, 21), for_conference=False)
+    conference = facade.assess_deadline("teaser", date(2026, 10, 21), for_conference=True)
 
     assert (plain.rush, conference.rush) == (False, True)
 
