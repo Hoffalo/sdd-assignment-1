@@ -84,6 +84,13 @@ def test_find_filters_by_status(repo, stored):
     assert repo.find(RequestFilter(status=Status.CLOSED)) == []
 
 
+def test_review_link_is_stored_by_a_transition(repo, stored):
+    repo.apply_transition(stored.id, Status.SUBMITTED, Status.ACCEPTED, {"review_url": "https://f.io/abc"},
+                          "", "admin", NOW)
+
+    assert repo.get(stored.id).review_url == "https://f.io/abc"
+
+
 def test_task_url_is_stored(repo, stored):
     repo.set_task_url(stored.id, "https://app.clickup.com/t/abc")
 

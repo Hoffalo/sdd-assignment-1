@@ -90,6 +90,19 @@ def test_deadline_check_explains_rush_live(client):
     assert (result["rush"], result["earliest_date"]) == (True, "23/10/2026")
 
 
+def test_requester_sees_the_frameio_link_while_in_review(app, client):
+    token = submit_briefing(client)
+    request_id = requests_facade(app).by_token(token).id
+    login(client)
+    act(client, request_id, "accept", analyst_id="2")
+    act(client, request_id, "start_production")
+    act(client, request_id, "send_to_review", review_url="https://f.io/abc123")
+
+    page = client.get(f"/pedido/{token}").get_data(as_text=True)
+
+    assert 'href="https://f.io/abc123"' in page
+
+
 def test_full_happy_path_closes_the_request(app, client, delivered):
     requester_link, _reviewer_link = invite_links(client, delivered)
 

@@ -137,6 +137,21 @@ def test_deliver_records_link_and_delivery_time(factory, receiver):
     assert receiver.apply_transition.call_args.args[3] == {"delivery_url": url, "delivered_at": NOW}
 
 
+@pytest.mark.parametrize("url", ["", "f.io/abc"])
+def test_sending_to_review_requires_a_review_link(factory, url):
+    command = factory.create("send_to_review", make_request(Status.IN_PRODUCTION), actor="admin", review_url=url)
+
+    with pytest.raises(MissingInput):
+        command.execute()
+
+
+def test_sending_to_review_records_the_review_link(factory, receiver):
+    url = "https://f.io/abc123"
+    factory.create("send_to_review", make_request(Status.IN_PRODUCTION), actor="admin", review_url=url).execute()
+
+    assert receiver.apply_transition.call_args.args[3] == {"review_url": url}
+
+
 def test_undo_restores_the_previous_status(factory, receiver):
     command = factory.create("request_info", make_request(Status.SUBMITTED), actor="admin", note="Falta o roteiro")
     command.execute()
