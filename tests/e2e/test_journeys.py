@@ -12,7 +12,8 @@ BRIEFING_FORM = {
     "needed_by": "2026-12-01", "needed_by_reason": "Abertura das inscrições",
     "q_objetivo": "Que estudantes queiram se inscrever", "q_mensagem_chave": "A conferência é sua",
     "q_publicos": ["Universitários no exterior"], "q_tom": "Inspirador (estilo Programa de Bolsas)",
-    "q_referencia_tom": "Aftermovie de 2025", "q_destinos": ["Instagram"], "q_formatos": ["Vertical 9:16"],
+    "q_referencia_tom": "Aftermovie de 2025", "q_destinos": ["Instagram"], "q_instagram_principal": "@brasasummiteuropa",
+    "q_instagram_collab": ["@gobrasa"], "q_formatos": ["Vertical 9:16"],
     "q_aprovadores": "Diretoria de Conferências", "q_teaser_anuncio": "Inscrições abertas",
     "q_avaliadores": "Bruno Lima",
 }
@@ -75,6 +76,12 @@ def test_invalid_briefing_is_shown_again_with_messages(client):
     response = post(client, "/pedido/novo", {**BRIEFING_FORM, "requester_email": "ana@gmail.com"})
 
     assert response.status_code == 422 and "@gobrasa.org" in response.get_data(as_text=True)
+
+
+def test_instagram_without_a_primary_account_is_rejected(client):
+    response = post(client, "/pedido/novo", {**BRIEFING_FORM, "q_instagram_principal": ""})
+
+    assert response.status_code == 422
 
 
 def test_deadline_check_explains_rush_live(client):
