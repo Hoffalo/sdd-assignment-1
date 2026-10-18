@@ -28,7 +28,7 @@ A rule never imports Flask or runs SQL. That is what lets about 75% of the tests
 | Facade | `RequestsFacade`, `FeedbackFacade` | Routes and services would otherwise need to know intake, lifecycle, repositories and events. | One entry point per domain makes the seam visible and maps directly to the service APIs of Assignment 2. | Risk of a god object; each facade only delegates, the rules live elsewhere. | **TO FILL** |
 | Observer | `RequestEventSubject` → `FeedbackInviteObserver`, `TaskTrackerObserver`; `FeedbackEventSubject` → `FeedbackOutcomeApplier` | Delivering must create invites and accepting must create a ClickUp task, without the requests domain knowing either exists. | The subject announces a status change; listeners are attached in the composition root. | In-process and synchronous: a slow listener (ClickUp) slows the click, and it cannot cross services. One failing observer is logged and does not stop the others. Assignment 2 replaces it with Pub/Sub. | **TO FILL** |
 | Strategy | `leadtime.LeadTimePolicy`: `StandardLeadTime`, `ConferenceLeadTime` | The deadline rule differs for conference content (COO review buffer and an earlier internal deadline). | Interchangeable policies behind `assess()`; callers never branch on the policy. | Two classes for a small rule today; justified because lead-time rules are expected to change per type. | **TO FILL** |
-| Command | `lifecycle.StatusChange` (+ `AcceptRequest`, `DeliverRequest`), `Lifecycle` invoker | Status changes are the audited core action, and a wrong click should be reversible. | Each change is an object with `execute()`/`undo()`; the repository is the receiver and writes the timeline row in the same transaction. | Undo is refused into or out of accepted, delivered and closed, because those already triggered work outside the domain (ClickUp task, feedback invites). The undo history lives in memory and is lost on restart. | **TO FILL** |
+| Command | `lifecycle.StatusChange` (+ `AcceptRequest`, `SendToReview`, `DeliverRequest`), `Lifecycle` invoker | Status changes are the audited core action, and a wrong click should be reversible. | Each change is an object with `execute()`/`undo()`; the repository is the receiver and writes the timeline row in the same transaction. | Undo is refused into or out of accepted, delivered and closed, because those already triggered work outside the domain (ClickUp task, feedback invites). The undo history lives in memory and is lost on restart. | **TO FILL** |
 
 Also present without being extra classes: the Repository idea (reader/writer ABCs) and Dependency Injection through constructors.
 
@@ -43,7 +43,7 @@ Also present without being extra classes: the Repository idea (reader/writer ABC
 | Principle | Smell | Where to point |
 |---|---|---|
 | SRP | Bloaters | `BriefingValidator`, `BriefingScorer`, `LeadTimePolicy`, repositories and facades each have one job; `BriefingIntake` only orchestrates them. |
-| OCP | Change Preventers | Required questions come from `seed.json`, answer checks from the `ANSWER_CHECKS` table, actions from `ACTIONS`: a new type, question or action needs no new `if`. |
+| OCP | Change Preventers | Required questions and follow-ups come from `seed.json`, answer checks from the `ANSWER_CHECKS` table, actions from `ACTIONS`, schema changes from `MIGRATIONS`: a new type, question, follow-up, action or column needs no new `if`. |
 | LSP | OO Abusers | `AcceptRequest` and `DeliverRequest` keep `StatusChange`'s contract; both policies return the same `LeadTimeAssessment`; test fakes honour the real interfaces. |
 | ISP | Dispensables | `RequestReader` vs `RequestWriter`, `FeedbackReader` vs `FeedbackWriter`, `CatalogReader`. |
 | DIP | Couplers | Domains depend on `Clock`, `TokenGenerator`, `TaskTracker` and repository ABCs; concrete classes are chosen only in `composition.py`. |
@@ -55,7 +55,15 @@ Also present without being extra classes: the Repository idea (reader/writer ABC
 - Accepting a request creates a ClickUp task automatically. Allowed by §7.6 as a public API the use case needs, but never *required*: without `CLICKUP_API_TOKEN` and `CLICKUP_LIST_ID` the app uses `DisabledTaskTracker` and works offline. The call is synchronous with a 5-second timeout because §1c forbids background workers, and a ClickUp failure is logged without blocking the acceptance.
 - The UI follows the Manual de ID Visual BRASA 2025: Lato only (Hagrid is not licensed for the repo and nothing loads from a CDN), text in Cinza Escuro on light backgrounds and Cinza Claro on dark blue/green, and palette colours never used as text.
 
-## 5. Open items `[A CONFIRMAR]`
+## 5. Product decisions from testing (2026-10-18)
+
+- Choosing the tone "Outro" asks for a description; ticking Instagram asks for the publishing account (required) and collab accounts (optional), from @gobrasa, @brasasummitamericas, @brasasummiteuropa, @brasasummitinnovation, @brasaemcasa and @redegobrasa. Built as follow-up questions in data (`depends_on`, `depends_value`), not as special cases in code.
+- The planned publication date, "quem publica" and the Design-approval question were removed: the due date is the only date the team plans against.
+- Reviews happen on Frame.io. "Enviar para revisão" requires the review link and the requester's tracking page shows it. Embedding Frame.io was considered and rejected: Frame.io does not support embeds and comments fail inside them.
+- The admin page opens a separate form per action, replacing two identical message boxes.
+- Because these changes had to reach a database already in use, request types and questions now sync from `seed.json` on every start, and new columns arrive through numbered migrations (`db.MIGRATIONS`, tracked in `PRAGMA user_version`).
+
+## 6. Open items `[A CONFIRMAR]`
 
 1. Real minimum lead time per type (`seed.json`, `request_types`). Placeholders: teaser 10, institucional 20, redes sociais 7, outro 10 business days.
 2. COO review buffer (`COO_REVIEW_BUFFER_DAYS`, default 3).

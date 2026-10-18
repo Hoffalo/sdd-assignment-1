@@ -22,9 +22,15 @@ This domain owns everything from the moment someone asks for a video until it is
 
 ### Request types and questions are data
 
-The four types (teaser, institucional, redes sociais, outro) and the 31 briefing questions live in `seed.json`, loaded into `request_types` and `briefing_questions`. A question with `type_code: null` is asked for every type (21 of them); the other 10 belong to one type.
+The four types (teaser, institucional, redes sociais, outro) and the 31 briefing questions live in `seed.json`, loaded into `request_types` and `briefing_questions` and kept in sync with the file on every start. A question with `type_code: null` is asked for every type (21 of them); the other 10 belong to one type.
 
 **Why:** the briefing is "the brief deconstructed", and it will change as the AV team learns what context it needs. Keeping it as data means a new question or type never requires new `if` branches (Open/Closed Principle). Types with a `detail_label` (redes sociais, outro) require a free-text description of what exactly is wanted.
+
+### Follow-up questions
+
+A question with `depends_on` and `depends_value` is a follow-up: `Question.is_shown(answers)` shows it only when the answer to `depends_on` equals `depends_value` (single choice) or contains it (multi-select). Today there are three: the description of an "Outro" tone, and, when Instagram is ticked, the publishing account (required) and collab accounts (optional, from the six BRASA handles).
+
+`Catalog.questions_for(type_code, answers)` returns only the questions currently shown, and the validator, the scorer and the answer cleaning all use it. A hidden follow-up is therefore never required, never counted in the score, and its answer is dropped on submit. Only one level of dependency exists; a follow-up of a follow-up would need its trigger checked in order.
 
 ### Completeness is measured, not just required
 
@@ -47,6 +53,7 @@ Too little notice does **not** block a request. It flags it as rush, asks for a 
 
 - `StatusChange`: the general command; demands a note for `needs_info` and `declined`, because the requester must be told why.
 - `AcceptRequest`: demands an analyst and records `analyst_id` and `accepted_at` (the start of turnaround).
+- `SendToReview`: demands an http(s) review link (Frame.io) and records `review_url`, which the tracking page shows to the requester while the request is in review.
 - `DeliverRequest`: demands an http(s) link to the final file and records `delivery_url` and `delivered_at`.
 
 `StatusCommandFactory.create(action_name, request, actor, ...)` refuses unknown actions, actions not allowed from the current status, and actions performed by the wrong kind of actor. `resubmit` is requester-only; every other action is admin-only.
@@ -58,7 +65,7 @@ Too little notice does **not** block a request. It flags it as rush, asks for a 
 - **Fixed columns versus `answers_json`.** Anything the rules, filters or metrics read is a real column. Type-dependent answers are JSON, because which answers exist depends on the type.
 - **`public_code`** (`AV-2026-0001`) is derived from the row id at insert time: readable for humans, unique without a counter table.
 - **`tracking_token`** is the requester's private key to the tracking page.
-- **`apply_transition`** updates the status and writes the timeline row in one transaction, with `WHERE id = ? AND status = ?`. A concurrent second click finds no matching row and raises `StaleTransition` instead of applying the move twice. It only accepts the four fields a transition may set (`analyst_id`, `accepted_at`, `delivery_url`, `delivered_at`).
+- **`apply_transition`** updates the status and writes the timeline row in one transaction, with `WHERE id = ? AND status = ?`. A concurrent second click finds no matching row and raises `StaleTransition` instead of applying the move twice. It only accepts the five fields a transition may set (`analyst_id`, `accepted_at`, `review_url`, `delivery_url`, `delivered_at`).
 
 ### Announcing changes
 
@@ -89,10 +96,14 @@ Errors are exceptions with business meaning: `RequestNotFound`, `TransitionNotAl
 - **A scorer test expected 50%** where 25% was right ("outro" has 3 common questions plus its own). The test was corrected; the code was right.
 - **A requester-only check** first lived in a helper beside the facade. It moved into `StatusCommandFactory.create`, next to the action table it depends on.
 - **The scorer** was originally its own ten-line module (`scoring.py`). It was merged into `intake.py`, its only user, to reduce file count.
+- **Questions that only make sense after an answer** ("Outro" tone, Instagram accounts) came out of user testing. They became data (`depends_on`, `depends_value`) instead of special cases in code.
+- **Question changes never reached a database already in use**, because seeding only filled empty tables. The catalog now syncs on every start, and new columns arrive through migrations (see `avdesk/README.md`).
 
 ## How to extend
 
-- **New question or type:** edit `seed.json`, in the matching list. Seed keys must equal column names. Remember that seeding only fills *empty* tables, so an existing database needs the rows added by hand or a fresh data directory.
+- **New question or type:** edit `seed.json`, in the matching list. Each row must list every column of its table (use `null` for `depends_on`/`depends_value` when there is no trigger). The change reaches existing databases on the next start.
+- **New follow-up question:** the same, with `depends_on` set to the trigger question's key and `depends_value` to the answer (or ticked option) that reveals it.
+- **New column:** add it to `schema.sql` *and* append the matching `ALTER TABLE` to `MIGRATIONS` in `db.py`; never edit or reorder existing migrations.
 - **New answer kind:** add it to the `kind` CHECK in `schema.sql`, add a checking function to `ANSWER_CHECKS`, and add its rendering to `web/templates/_macros.html`.
 - **New action:** add one `Action` row; if it needs inputs, subclass `StatusChange` and override `check_inputs` and `fields`.
 - **New deadline rule:** add a `LeadTimePolicy` subclass returning a `LeadTimeAssessment`, and choose it in `lead_time_policy_for`.

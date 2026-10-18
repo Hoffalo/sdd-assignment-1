@@ -41,11 +41,11 @@ Every feature in AV Desk is the answer to one of these five rows. Keep the table
 Follow one invented request from start to end. Ana, from the Conferências diretoria, needs a teaser for the BRASA Summit Europa.
 
 1. **She opens the app.** The landing page asks what she needs. Regular editorial posts (feed, stories, calendar reels) are sent back to the existing ClickUp briefing flow, because AV Desk must not replace it. A video goes forward.
-2. **She fills in the briefing.** She picks the type *Teaser*. The form shows the questions every video needs (objective, message, audience, tone, formats, approvers…) plus the teaser-specific ones (what does it announce?). As she types, a bar shows how complete the briefing is. When she picks a deadline, the form tells her whether it gives enough notice. Too little notice does not block her; it marks the request as **rush** and asks her to explain why the date cannot move.
+2. **She fills in the briefing.** She picks the type *Teaser*. The form shows the questions every video needs (objective, message, audience, tone, formats, approvers…) plus the teaser-specific ones (what does it announce?). Some questions only appear when an earlier answer makes them relevant: ticking Instagram asks which BRASA account publishes the post and which accounts join as collaborators; choosing the tone "Outro" asks her to describe it. As she types, a bar shows how complete the briefing is. When she picks a deadline, the form tells her whether it gives enough notice. Too little notice does not block her; it marks the request as **rush** and asks her to explain why the date cannot move.
 3. **She submits.** The app checks everything again on the server, saves the request with a readable code (`AV-2026-0001`) and sends her to a private tracking page whose address contains a long random string. That address is her only key: no account, no password.
 4. **The AV manager triages.** In the admin inbox, the manager (Lorenzo) sees the request with its deadline, rush flag and completeness score. He can ask for more information (Ana gets a form to complete and resubmit), decline it, or accept it and choose who produces it.
 5. **Accepting creates a ClickUp task**, if ClickUp is configured, so the work appears in the team's tracker without retyping.
-6. **Production.** The request moves to *in production*, optionally to *in review* and back, and finally *delivered*, which requires the Google Drive link of the final file.
+6. **Production and review.** The request moves to *in production*. When a cut is ready, the manager sends it *to review* with its **Frame.io** link (Frame.io is the video review tool the team uses: reviewers comment on the exact frame). Ana's tracking page then shows a "Sua vez de revisar" card with a button to that review. The manager can ask for changes (back to production) or mark it *delivered*, which requires the Google Drive link of the final file.
 7. **Delivery creates feedback links**: one for Ana and one for each extra reviewer she named in the briefing. The manager copies them or sends them by e-mail with a prepared link.
 8. **Feedback.** Each person rates four things from 1 to 5 and says whether the video is approved, approved with small tweaks, or needs major changes. Ana's answer decides what happens: approved means the request is **closed**; major changes sends it back to **production**. Other reviewers' answers are recorded but never move the request.
 9. **Metrics.** The manager's metrics page combines everything: how many requests are rush, how long production takes, how often deadlines are met, average ratings by type and diretoria, and whether fuller briefings lead to better outcomes.
@@ -67,10 +67,10 @@ The hard rules, and what each one forced in AV Desk:
 | Use the provided Dockerfile, fill only 4 TODO lines (§1a) | `Dockerfile` at the root is the template; only the source-copy line was written |
 | Bind `0.0.0.0` and read the port from `PORT` (§7.2–7.3) | `app.py` reads `PORT`, binds all interfaces |
 | Configuration only through environment variables, no `.env` required (§7.9) | `config.py`, every setting has a default |
-| Create the schema on first boot; seed from a text file, only into empty tables; never drop tables (§7.4, §7.11) | `db.py` and `seed.json`; startup is idempotent |
+| Create the schema on first boot; seed from a text file without duplicating rows; never drop tables (§7.4, §7.11) | `db.py` and `seed.json`; startup is idempotent, and existing databases are upgraded in place |
 | No background workers or message brokers (§1c) | ClickUp is called during the click, with a short timeout |
 | Two backend domains that could be split into separate services later (§3) | `requests_domain` and `feedback_domain`, connected only through `services/` |
-| ≥70% test coverage of core logic (§4) | 183 tests, 97% coverage |
+| ≥70% test coverage of core logic (§4) | 208 tests, 97% coverage |
 | `ADR.md`, `AI_USAGE.md`, meaningful commits over several days (§5) | Decision log, AI log, small commits with "what and why" messages |
 
 And one course rule that shapes everything else: the code must visibly apply what was taught in class, namely SOLID and code smells, nine design patterns, and the testing fundamentals. Each pattern had to *earn its place*: be the answer to a real problem in this app, with its trade-off stated.
@@ -172,7 +172,7 @@ The course slides warn that naïve Singletons break with threads. A **thread** i
 Two settings deserve a note:
 
 - If `ADMIN_PASSWORD` is not set, the app uses the insecure default `avdesk-dev` and **logs a warning**. Crashing would violate the "no interactive setup, start within seconds" rule; silently accepting a default would hide the risk.
-- If `SECRET_KEY` (used to sign the login cookie, section 11.4) is not set, it is derived from the admin password. One variable is enough, at the cost that changing the password logs everyone out.
+- If `SECRET_KEY` (used to sign the login cookie, section 11.5) is not set, it is derived from the admin password. One variable is enough, at the cost that changing the password logs everyone out.
 
 ### 7.3 The adapters: time, tokens, ClickUp, database
 
@@ -189,15 +189,24 @@ A **token** here is that long random string in a link. Because it cannot be gues
 
 `Database.connect()` opens one **connection** (a live channel to the database file) per unit of work, turns on foreign-key checking (section 12), and wraps the work in a **transaction**: a group of changes that is saved all together (**commit**) or not at all (**rollback**) if anything fails. It is deliberately *not* a Singleton: one connection shared by waitress's threads would break.
 
-### 7.4 Tables and seed data, safely, on every boot
+### 7.4 Tables, upgrades and reference data, safely, on every boot
 
 A **table** is like a spreadsheet: columns define the fields, each row is one record. **SQL** is the language for creating tables and reading or writing rows.
 
-Each domain owns a `schema.sql` file describing its tables. On every boot, `create_schema` runs those files, which use `CREATE TABLE IF NOT EXISTS`: missing tables are created, existing ones are untouched. Then `seed_if_empty` reads [seed.json](../seed.json), the **reference data** (diretorias, analysts, request types and every briefing question) and inserts each list only into a table that is still empty.
+Startup does three things to the database, and each is safe to repeat.
+
+**1. Create what is missing.** Each domain owns a `schema.sql` file describing its tables as they look *today*. `create_schema` runs those files, which use `CREATE TABLE IF NOT EXISTS`: missing tables are created, existing ones are untouched.
+
+**2. Upgrade what is old.** `CREATE TABLE IF NOT EXISTS` never changes a table that already exists, so a database created last week would never receive a column added this week. That is what **migrations** are for: numbered, ordered changes to an existing database. `MIGRATIONS` in `db.py` is an append-only list of such changes (for example "add the column `review_url` to `requests`"). SQLite keeps a counter called `PRAGMA user_version` inside the file; startup runs only the steps after that number and then raises it. A brand-new database is created directly in today's shape, so it is stamped with the latest number and runs no step at all.
+
+**3. Load reference data.** [seed.json](../seed.json) holds the reference data, and it is treated in two different ways, because of who points at it:
+
+- **Request types and briefing questions** are configuration that the AV manager will keep refining (the `[A CONFIRMAR]` items). They follow `seed.json` on every boot: each row is matched by its natural key (`code`, `key`) and updated, and questions that disappeared from the file are removed. Nothing stores a reference to a question row, so removing one is safe; types are never removed, because requests point at them.
+- **Diretorias and analysts** are seeded once, into empty tables, and never rewritten: requests point at them by id, so renaming or deleting them from a file could break existing requests.
 
 Booting twice therefore changes nothing. That property is called **idempotent**, and the brief's checker tests it by restarting the container and comparing row counts. The opposite mistakes, both explicitly warned against in the brief, would be inserting the seed on every boot (rows double) or dropping tables and recreating them (every user's data wiped on restart).
 
-A small safety detail: table names cannot be passed to SQL as parameters, so `seed_if_empty` only accepts names that already exist in the schema. An unknown name in `seed.json` raises an error instead of reaching the database.
+Two safety details: table names cannot be passed to SQL as parameters, so only names that exist in the schema are accepted from `seed.json`; and a synced row must list *every* column, because a missing one would silently keep a stale value.
 
 ### 7.5 The composition root wires everything
 
@@ -221,11 +230,11 @@ These are the nouns the domain talks about:
 
 - **`Status`**: an **enum** (a fixed list of named values) of the nine statuses, each with a Portuguese label for the UI: `submitted` (Recebido), `needs_info`, `accepted`, `in_production`, `in_review`, `delivered`, `closed`, `declined`, `cancelled`.
 - **`RequestType`**: code, label, minimum lead time in business days, and `detail_label`. When a type has a detail label (redes sociais: "Qual formato?"; outro: "Descreva o que você precisa"), the requester must answer it in free text.
-- **`Question`**: one briefing question: key, the type it belongs to (`None` = asked for every type), section, label, kind (`text`, `textarea`, `url`, `date`, `choice`, `multichoice`, `yesno`), options, required or not.
-- **`Catalog`**: all reference data together, with lookups like `questions_for("teaser")` (the 21 common questions plus the teaser's 3).
+- **`Question`**: one briefing question: key, the type it belongs to (`None` = asked for every type), section, label, kind (`text`, `textarea`, `url`, `date`, `choice`, `multichoice`, `yesno`), options, required or not, and an optional **trigger** (`depends_on`, `depends_value`). A question with a trigger is a follow-up: `is_shown(answers)` says it appears only when the answer to `depends_on` equals `depends_value` (for a single choice) or contains it (for a multi-select). The "Outro" tone description and the two Instagram account questions work this way.
+- **`Catalog`**: all reference data together, with lookups like `questions_for("teaser")` (the 21 common questions plus the teaser's 3) and `questions_for("teaser", answers)`, which keeps only the questions currently shown.
 - **`Request`** and **`RequestEvent`**: a stored request and one line of its timeline.
 
-**Design choice: questions are data, not code.** They live in `seed.json`. Adding a question or a whole new request type means editing that file, never writing `if type == "teaser"` branches. That is the **Open/Closed Principle** (the O in SOLID): code open to new behavior without editing what already works. The smell it prevents is **Change Preventers**: one change forcing edits in many places.
+**Design choice: questions are data, not code.** They live in `seed.json`. Adding a question, a follow-up or a whole new request type means editing that file, never writing `if type == "teaser"` branches. That is the **Open/Closed Principle** (the O in SOLID): code open to new behavior without editing what already works. The smell it prevents is **Change Preventers**: one change forcing edits in many places.
 
 ### 8.2 Assembling the briefing: `briefing.py`
 
@@ -242,16 +251,16 @@ briefing = (BriefingBuilder()
             .build())
 ```
 
-`build()` returns the finished briefing and resets the builder for the next one. The **Director**, `BriefingDirector`, holds presets: `director.teaser(needed_by=...)` produces a complete valid briefing, and any field can be overridden by name (`director.teaser(..., requester_email="x@gmail.com")`). The web layer uses the builder to turn a submitted form into a briefing (section 11.3); the tests use the director everywhere.
+`build()` returns the finished briefing and resets the builder for the next one. The **Director**, `BriefingDirector`, holds presets: `director.teaser(needed_by=...)` produces a complete valid briefing, and any field can be overridden by name (`director.teaser(..., requester_email="x@gmail.com")`). The web layer uses the builder to turn a submitted form into a briefing (section 11.4); the tests use the director everywhere.
 
 ### 8.3 Checking the briefing: `intake.py` and `validators.py`
 
 `BriefingIntake.check()` runs four steps, in an order where each step depends on the previous:
 
-1. **Clean the answers.** `keep_answers` drops answers to questions of other types. If Ana filled in teaser questions and then switched to "Outro", the teaser answers are not stored.
+1. **Clean the answers.** `keep_answers` drops answers to questions she can no longer see: questions of other types (if Ana filled in teaser questions and then switched to "Outro", the teaser answers are not stored) and follow-ups whose trigger changed (if she picked an Instagram account and then unticked Instagram, the account is not stored).
 2. **Assess the deadline** with the lead-time rule (8.4).
-3. **Validate.** `BriefingValidator.validate()` returns a dictionary of field → message in Portuguese; empty means valid. It checks the `@gobrasa.org` e-mail, the diretoria, the type and its detail, the title, a future deadline with a reason, a rush reason when needed, text length caps, and then every applicable question. Which questions are required comes from the data. How an answer is checked depends on its kind, through one lookup table, `ANSWER_CHECKS`: a `url` must start with `http://` or `https://`, a `date` must be a real date, a `choice` must be one of its options, and so on.
-4. **Score.** `BriefingScorer` computes the percentage of applicable questions answered.
+3. **Validate.** `BriefingValidator.validate()` returns a dictionary of field → message in Portuguese; empty means valid. It checks the `@gobrasa.org` e-mail, the diretoria, the type and its detail, the title, a future deadline with a reason, a rush reason when needed, text length caps, and then every question currently shown. A hidden follow-up is never required, even if it is marked required: the Instagram account is mandatory only when Instagram is ticked. Which questions are required comes from the data. How an answer is checked depends on its kind, through one lookup table, `ANSWER_CHECKS`: a `url` must start with `http://` or `https://`, a `date` must be a real date, a `choice` must be one of its options, and so on.
+4. **Score.** `BriefingScorer` computes the percentage of shown questions answered, so hidden follow-ups neither lower nor raise it.
 
 The result is a `CheckedBriefing`: the cleaned briefing, the errors, the deadline assessment and the score.
 
@@ -287,7 +296,7 @@ Splitting readers from writers is the **Interface Segregation Principle** (the I
 `SqliteRequestRepository` is the Adapter that fulfils both contracts. Four details matter in practice:
 
 - **Parameterised SQL.** Values travel as `?` placeholders, never pasted into the SQL text, which blocks the attack called SQL injection.
-- **Two kinds of columns.** Fields that rules, filters and metrics read (status, type, diretoria, deadline, rush, score…) are real columns. The type-dependent answers are stored together as JSON text in `answers_json`, because which answers exist varies by type.
+- **Two kinds of columns.** Fields that rules, filters and metrics read (status, type, diretoria, deadline, rush, score, the review and delivery links…) are real columns. The type-dependent answers are stored together as JSON text in `answers_json`, because which answers exist varies by type.
 - **The public code** `AV-2026-0001` is built from the row's id right after insertion, so codes are unique without a counter table.
 - **The status guard.** `apply_transition` updates the status *and* writes the timeline row in one transaction, with `WHERE status = ?` set to the status the caller expected. If the manager double-clicks, or two tabs race, only the first update finds a matching row; the second changes nothing and raises `StaleTransition`. The page then says the request changed while you were looking.
 
@@ -304,7 +313,7 @@ This file combines three patterns, so take it in pieces.
 | `resubmit` | (requester only) | needs_info | submitted | |
 | `decline` | Recusar | submitted, needs_info | declined | a note |
 | `start_production` | Iniciar produção | accepted | in_production | |
-| `send_to_review` | Enviar para revisão | in_production | in_review | |
+| `send_to_review` | Enviar para revisão | in_production | in_review | an http Frame.io review link |
 | `request_changes` | Pedir ajustes | in_review | in_production | |
 | `deliver` | Marcar como entregue | in_production, in_review | delivered | an http Drive link |
 | `close` | Concluir | delivered | closed | |
@@ -313,7 +322,7 @@ This file combines three patterns, so take it in pieces.
 
 `TRANSITIONS`, the map of which status may move to which, is *derived* from this table. Rules and buttons therefore cannot disagree. Closed, declined and cancelled have no way out.
 
-**Command.** Each status change is an object with `execute()` and `undo()`. `StatusChange` is the general version (it demands a note for `needs_info` and `declined`). `AcceptRequest` adds "an analyst is required" and records who and when; `DeliverRequest` adds "a valid link is required" and records the link and time. The subclasses keep the same contract (LSP). The **receiver**, the object that really applies the change, is the repository.
+**Command.** Each status change is an object with `execute()` and `undo()`. `StatusChange` is the general version (it demands a note for `needs_info` and `declined`). `AcceptRequest` adds "an analyst is required" and records who and when; `SendToReview` adds "a review link is required" and records it; `DeliverRequest` adds "a valid link is required" and records the link and time. The subclasses keep the same contract (LSP). The **receiver**, the object that really applies the change, is the repository.
 
 **Factory Method.** `StatusCommandFactory.create("accept", request, ...)` looks the action up in its **factory map** (a dictionary from name to action), checks that the request's current status is allowed, checks the actor (only the requester may `resubmit`, and the requester may do nothing else), and builds the right command class. The admin page only ever sends an action name.
 
@@ -401,11 +410,17 @@ Templates live in `web/templates/`. `base.html` is the shared frame; `_macros.ht
 
 All text follows BRASA's language rules ("a BRASA", "estudante", "conferência"). Colours follow the Manual de ID Visual BRASA 2025: on light backgrounds text is only Cinza Escuro, on dark blue or green only Cinza Claro, and palette colours are never used as text.
 
-### 11.3 From form to briefing
+### 11.3 Review on Frame.io, and the admin actions panel
 
-[forms.py](../avdesk/web/forms.py) does the translation in both directions. `briefing_from_form` uses the Builder: fixed fields by name, then every question by the name `q_<key>` (the prefix avoids clashes with fixed fields), multi-select answers as a tuple, yes/no as `"sim"`/`"nao"`. `question_sections` groups questions for display: common sections first, then one block per type, in the order set by `seed.json`.
+The team reviews cuts on Frame.io. Embedding Frame.io inside AV Desk was the first idea, but Frame.io does not support being shown inside other sites: its staff call iframe embeds unsupported and liable to break, and users report that commenting inside an embed fails. So while a request is *in review*, the tracking page shows a "Sua vez de revisar" card whose button opens the review in a new tab, where commenting works.
 
-### 11.4 Security
+On the admin detail page, actions that need input (accept, ask for information, decline, send to review, deliver, cancel, reopen, request changes) open their own small form when clicked, with wording specific to the action ("O que falta no briefing?" versus "Por que o pedido foi recusado?"). Actions that need nothing (start production, close) are one-click buttons.
+
+### 11.4 From form to briefing
+
+[forms.py](../avdesk/web/forms.py) does the translation in both directions. `briefing_from_form` uses the Builder: fixed fields by name, then every question by the name `q_<key>` (the prefix avoids clashes with fixed fields), multi-select answers as a tuple, yes/no as `"sim"`/`"nao"`. Follow-up fields carry their trigger as `data-depends-on`/`data-depends-value` attributes for the JavaScript. `question_sections` groups questions for display: common sections first, then one block per type, in the order set by `seed.json`.
+
+### 11.5 Security
 
 [security.py](../avdesk/web/security.py) handles four things:
 
@@ -414,9 +429,9 @@ All text follows BRASA's language rules ("a BRASA", "estudante", "conferência")
 - **The login** is remembered in a **session cookie**: a small piece of data the browser stores and sends back, **signed** with the secret key so it cannot be forged. It is marked `HttpOnly` (scripts cannot read it) and `SameSite=Lax` (other sites cannot send it along with their requests).
 - **After login**, the app only redirects to paths starting with `/admin`, so the login page cannot be used to bounce people to another site.
 
-### 11.5 JavaScript, only as an enhancement
+### 11.6 JavaScript, only as an enhancement
 
-[briefing.js](../avdesk/web/static/js/briefing.js) shows only the sections of the chosen type, reveals the detail field when needed, previews the completeness score and calls `/pedido/prazo` to explain the deadline rule live. That endpoint runs the *same Python policy* as the real submission, so the rule exists in one place only. [copy.js](../avdesk/web/static/js/copy.js) powers the copy buttons. Without JavaScript every section shows and the server still validates everything.
+[briefing.js](../avdesk/web/static/js/briefing.js) shows only the sections of the chosen type, reveals the detail field when needed, reveals follow-up questions when their trigger is chosen (mirroring `Question.is_shown`), previews the completeness score and calls `/pedido/prazo` to explain the deadline rule live. That endpoint runs the *same Python policy* as the real submission, so the rule exists in one place only. [copy.js](../avdesk/web/static/js/copy.js) powers the copy buttons. Without JavaScript every section shows and the server still validates everything.
 
 ## 12. The data: every table and why it looks that way
 
@@ -428,9 +443,9 @@ A **foreign key** is a database rule saying "this column must point at an existi
 |---|---|---|
 | `diretorias` | The 8 diretorias | Seeded |
 | `analysts` | People who produce videos | Seeded with generic names, never real people |
-| `request_types` | The 4 types and their lead times | Seeded; lead times are placeholders `[A CONFIRMAR]` |
-| `briefing_questions` | The 31 questions | Seeded; options stored as JSON |
-| `requests` | One row per request | Fixed columns for what rules and metrics read; `answers_json` for the rest; `CHECK` constraints keep status, score and booleans in range |
+| `request_types` | The 4 types and their lead times | Synced from `seed.json` on every boot (never deleted); lead times are placeholders `[A CONFIRMAR]` |
+| `briefing_questions` | The 31 questions | Synced from `seed.json` on every boot; options stored as JSON; `depends_on`/`depends_value` hold a follow-up's trigger |
+| `requests` | One row per request | Fixed columns for what rules and metrics read (including `review_url` and `delivery_url`); `answers_json` for the rest; `CHECK` constraints keep status, score and booleans in range |
 | `request_events` | The timeline | Foreign key to `requests` |
 
 **Feedback domain** ([schema.sql](../avdesk/feedback_domain/schema.sql)):
@@ -442,7 +457,7 @@ A **foreign key** is a database rule saying "this column must point at an existi
 
 Foreign keys exist *inside* each domain and never *across* (ADR-3). In Assignment 2 the feedback tables move to their own database, where a key into another database cannot exist. The cost: if a request is edited after delivery, the snapshot does not follow. That is acceptable, because the snapshot records what was delivered.
 
-Dates and times are stored as ISO text (`2026-10-09T12:00:00+00:00`), in UTC.
+Dates and times are stored as ISO text (`2026-10-09T12:00:00+00:00`), in UTC. The database file also records its migration number in `PRAGMA user_version` (section 7.4).
 
 ## 13. Tests: how we know it works
 
@@ -450,9 +465,9 @@ Folder: [tests/](../tests/). The course slides describe a **testing pyramid**: m
 
 | Layer | Count | What it tests | How |
 |---|---|---|---|
-| Unit (`tests/unit/`) | 114 | One rule at a time | No database; `FixedClock`, `SequentialTokens`, `mocker` mocks |
-| Integration (`tests/integration/`) | 50 | Repositories, seeding, facades, the seam wiring | A real SQLite file in a temporary folder |
-| End-to-end (`tests/e2e/`) | 19 | Whole journeys over HTTP | Flask's **test client**, a fake browser inside Python |
+| Unit (`tests/unit/`) | 128 | One rule at a time | No database; `FixedClock`, `SequentialTokens`, `mocker` mocks |
+| Integration (`tests/integration/`) | 59 | Repositories, seeding, migrations, facades, the seam wiring | A real SQLite file in a temporary folder |
+| End-to-end (`tests/e2e/`) | 21 | Whole journeys over HTTP | Flask's **test client**, a fake browser inside Python |
 
 The vocabulary from class, as used here:
 
@@ -460,11 +475,11 @@ The vocabulary from class, as used here:
 - **Stub**: a stand-in that returns fixed answers ("pretend this request is delivered").
 - **Fake**: a simple working replacement (`FixedClock`, the temporary database).
 - **Fixture**: reusable setup that pytest hands to tests by parameter name (`clock`, `seeded_db`, `client`), defined in `tests/conftest.py`. Fixtures build on each other: `seeded_db` starts from `migrated_db`.
-- **TDD** (test-driven development): write a failing test (red), make it pass (green), then clean up. The git history shows red/green commit pairs for configuration, lead time, the briefing, the lifecycle and the feedback rules.
+- **TDD** (test-driven development): write a failing test (red), make it pass (green), then clean up. The git history shows red/green commit pairs for configuration, lead time, the briefing, the lifecycle, the feedback rules, follow-up questions, database upgrades and the review link.
 - **AAA**: every test is Arrange (set up), Act (do one thing), Assert (check).
 - **FIRST**: Fast, Independent, Repeatable, Self-validating, Timely. The injected clock is what makes the date-based tests repeatable.
 
-Coverage (the share of code lines executed by tests) is 97%. Unit tests make up 62% of the suite, below the slides' 70–80%. That is deliberate (ADR-4): the riskiest code (atomic transitions, idempotent seeding, the missing cross-domain foreign key) only proves anything against a real database.
+Coverage (the share of code lines executed by tests) is 97% across 208 tests. Unit tests make up 62% of the suite, below the slides' 70–80%. That is deliberate (ADR-4): the riskiest code (atomic transitions, idempotent seeding, the missing cross-domain foreign key) only proves anything against a real database.
 
 ```bash
 .venv/bin/python -m pytest --cov=avdesk --cov-report=term-missing
@@ -499,6 +514,12 @@ The root [README](../README.md) has the exact commands and the table of every en
 | Docker Desktop doesn't start from a script | First `run.sh` attempt | Started by hand, then the check was run |
 | `run.sh` fails on Windows Git Bash (`mktemp` template without `XXX`; `python3` is a Store placeholder) | Producing the §7 evidence | Two tiny wrappers placed first on `PATH`; the script itself was not modified (note in the README) |
 | Unit tests below the slides' share | Coverage report | Kept, and justified in ADR-4 rather than padded with low-value mocks |
+| Question changes never reached an existing database, because seeding only filled empty tables | Testing the app with a real local database | Request types and questions now sync from `seed.json` on every boot; diretorias and analysts stay seed-once |
+| New columns (follow-up triggers, review link) could not reach an existing database, because `CREATE TABLE IF NOT EXISTS` never alters a table | Same test | Append-only `MIGRATIONS` tracked in `PRAGMA user_version`, checked on a copy of the real database before use |
+| Some questions only make sense after a specific answer ("Outro" tone, Instagram accounts) | User testing | Follow-up questions as data (`depends_on`, `depends_value`); hidden ones are never required, scored or stored |
+| Frame.io cannot be embedded, and comments fail inside an embed | Designing the review step | The review opens on Frame.io in a new tab, from a card on the tracking page |
+| The admin page showed two identical "Mensagem para quem pediu" boxes | User testing | Each action that needs input opens its own form, with its own wording |
+| A preview server started for testing ignored its `DATA_DIR` and opened the real local database | Checking the admin panel in the browser | Stopped before any click; the scratch server now sets its variables inside Python. The only effect was the planned upgrade, already tested on a copy |
 
 ## 16. Where Assignment 2 cuts
 
@@ -523,14 +544,14 @@ Cut between the two domain folders. The line runs through [services/seam.py](../
 | Facade | `RequestsFacade`, `FeedbackFacade` | One front door per domain |
 | Observer | `RequestEventSubject`, `FeedbackEventSubject` + listeners in `services/` | Domains react to each other without importing each other |
 | Strategy | `StandardLeadTime`, `ConferenceLeadTime` | Interchangeable deadline rules behind `assess()` |
-| Command | `StatusChange`, `AcceptRequest`, `DeliverRequest`, `Lifecycle` | Status changes as objects with execute/undo and an audit trail |
+| Command | `StatusChange`, `AcceptRequest`, `SendToReview`, `DeliverRequest`, `Lifecycle` | Status changes as objects with execute/undo and an audit trail |
 
 ### SOLID
 
 | Principle | Smell prevented | Where to point |
 |---|---|---|
 | Single Responsibility | Bloaters | Validator, scorer, policy, repository, facade each do one job |
-| Open/Closed | Change Preventers | Questions and types in `seed.json`, `ANSWER_CHECKS`, `ACTIONS` |
+| Open/Closed | Change Preventers | Questions, follow-ups and types in `seed.json`, `ANSWER_CHECKS`, `ACTIONS`, `MIGRATIONS` |
 | Liskov Substitution | OO Abusers | Command subclasses and both policies keep their contract; fakes honour real interfaces |
 | Interface Segregation | Dispensables | Reader/writer splits |
 | Dependency Inversion | Couplers | Contracts + constructor injection + one composition root |

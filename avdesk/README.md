@@ -11,7 +11,7 @@ avdesk/
 ├── clock.py             Clock contract + SystemClock adapter
 ├── tokens.py            TokenGenerator contract + SecureTokenGenerator adapter
 ├── task_tracker.py      TaskTracker contract + ClickUp and disabled adapters
-├── db.py                SQLite connections, schema creation, idempotent seeding
+├── db.py                SQLite connections, schema, migrations, reference data
 ├── requests_domain/     asking for and producing a video      → see its README
 ├── feedback_domain/     feedback after delivery                → see its README
 ├── services/            the only code that knows both domains  → see its README
@@ -69,13 +69,15 @@ The field mapping (priority, tags, assignee) is a first draft marked `[A CONFIRM
 
 It sits at the top level, next to `clock.py` and `tokens.py`, because it is the same kind of thing: an adapter over something outside the program. It originally lived in an `integrations/` package of its own; it was moved to reduce file count and to group adapters together.
 
-### `db.py`: connections, schema and seed
+### `db.py`: connections, schema, migrations, reference data
 
 - `Database.connect()` gives one connection per unit of work: foreign keys on, rows readable by column name, commit on success, rollback on any error. It is deliberately not a Singleton, because sqlite3 connections must not be shared between waitress's threads.
-- `create_schema()` runs each domain's `schema.sql`, written with `CREATE TABLE IF NOT EXISTS`, so it only ever adds what is missing.
-- `seed_if_empty()` loads `seed.json` table by table, and only into empty tables. Keys starting with `_` (like `_nota`) are comments and are skipped. List values become JSON text. Unknown table names raise an error, because table names cannot be passed as SQL parameters and must therefore be checked against the real schema.
+- `create_schema()` runs each domain's `schema.sql` (always today's shape, `CREATE TABLE IF NOT EXISTS`), then brings an older database up to date with `MIGRATIONS`, an append-only list of changes such as "add column `review_url`". SQLite's `PRAGMA user_version` stores how many steps a database has had; only the missing ones run. A new database is stamped at the latest number, since `schema.sql` already has every column.
+- `load_reference_data()` loads `seed.json` in two ways. Tables in `SYNCED_TABLES` (request types and briefing questions) follow the file on every boot, matched by natural key; questions missing from the file are removed, types never are. Every other table (diretorias, analysts) is filled only when empty, because requests point at those rows by id. Keys starting with `_` (like `_nota`) are comments and are skipped; list values become JSON text; unknown table names raise an error (table names cannot be SQL parameters, so they are checked against the real schema); a synced row must list every column, so a forgotten field can't silently keep a stale value.
 
 Booting twice changes nothing (idempotent), which is what the brief's checker verifies by restarting the container and comparing row counts.
+
+**Why it changed after the first version.** Seeding originally filled only empty tables, and the schema had no migrations. Testing against a real local database showed that edited questions and new columns never reached it. The upgrade was tested on a copy of that database before use: version 0 to 3, existing requests untouched.
 
 ### `composition.py`: the composition root
 

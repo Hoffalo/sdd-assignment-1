@@ -20,7 +20,7 @@ Flask glue and nothing more. Every route does three things: parse HTTP input, ca
 | `security.py` | CSRF tokens, constant-time password check, admin session helpers |
 | `templates/` | Jinja templates (below) |
 | `static/css/avdesk.css` | All styling, built from the BRASA visual identity manual |
-| `static/js/briefing.js` | Type-aware form, live score, live deadline notice |
+| `static/js/briefing.js` | Type-aware form, follow-up questions, live score, live deadline notice |
 | `static/js/copy.js` | Copy-to-clipboard buttons |
 
 ## Routes
@@ -47,10 +47,12 @@ URLs are Portuguese because users see them. HTTP status codes follow their meani
 
 - **The scope gate comes first.** The landing page sends regular editorial-calendar posts back to the Comunicação ClickUp flow. AV Desk must not replace that process.
 - **Links are the authorisation.** Requesters and reviewers have no accounts; the token in the URL is the key. The admin page shows each link so the manager can share it.
-- **The form follows the type.** `_briefing_fields.html` renders every section with `data-type` (empty for common sections). `briefing.js` hides the sections of other types and shows the type-detail field when the type has a `detail_label`. The server never relies on this: it validates against the chosen type and drops other types' answers.
+- **The form follows the type and the answers.** `_briefing_fields.html` renders every section with `data-type` (empty for common sections), and every follow-up question with `data-depends-on`/`data-depends-value`. `briefing.js` hides the sections of other types, shows the type-detail field when the type has a `detail_label`, and shows a follow-up only when its trigger is chosen (mirroring `Question.is_shown`). The server never relies on this: it validates against the questions actually shown and drops every other answer.
 - **The deadline rule exists once.** The live notice calls `/pedido/prazo`, which runs the same Python `LeadTimePolicy` as submission. JavaScript only displays the result.
 - **The live score is a preview.** `briefing.js` counts answered visible questions; the stored score is computed by `BriefingScorer` on the server.
 - **Answer field names** are `q_<question key>` (`ANSWER_PREFIX`), so they never clash with fixed fields like `title`. Multi-select answers arrive as repeated fields and become a tuple; yes/no answers are `sim`/`nao`.
+- **Review on Frame.io, linked not embedded.** While a request is in review, `tracking.html` shows a "Sua vez de revisar" card whose button opens the Frame.io link in a new tab. Frame.io does not support being embedded in other sites, and commenting fails inside an embed, so a link is the reliable way for the requester to watch and comment.
+- **One form per action.** On `admin_detail.html`, actions that need input (analyst, a message, a review or delivery link, an optional note) are collapsible `<details>` with their own fields and wording; actions that need nothing (start production, close) are single buttons. This replaced a layout where "Pedir mais informações" and "Recusar" each showed an identical "Mensagem para quem pediu" box.
 - **Copy, not send.** The admin page offers "copy Slack message", copyable feedback links and a pre-filled `mailto:` link, because outbound e-mail and Slack were deliberately not built (no secrets, no background sending).
 - **Language.** All visible text is Brazilian Portuguese and follows BRASA's language rules: "a BRASA" in capitals, "estudante" not "aluno", "conferência" for Summits, product names in full.
 
@@ -62,7 +64,7 @@ URLs are Portuguese because users see them. HTTP status codes follow their meani
 | `_macros.html` | `question` (one field of any kind), `text_field`, `status_badge`, `error`, `csrf` |
 | `_briefing_fields.html` | The briefing form; shared by the new-request page and resubmission, so both always match |
 | `landing.html` | Scope gate |
-| `briefing_form.html`, `tracking.html` | Requester pages |
+| `briefing_form.html`, `tracking.html` | Requester pages; the tracking page also shows the Frame.io review card while in review |
 | `feedback_form.html` | Reviewer page |
 | `message.html` | Any single-message page: not found, link used/expired, thank you |
 | `admin_login.html`, `admin_inbox.html`, `admin_detail.html`, `admin_metrics.html` | Manager pages |
@@ -97,3 +99,5 @@ Lato is the official typeface. Hagrid, the display face, is not licensed for thi
 - **The empty dashboard showed "—%".** The percent sign is now appended only to real values.
 - **Two message templates** (not found, feedback closed) were nearly identical. They became one `message.html`, and the admin blueprint reuses the public 404 handler instead of duplicating it.
 - **Hard-coded URLs** (`/pedido/novo` in the landing page) were replaced by `url_for`, so routes can change in one place.
+- **Two identical message boxes** on the admin page (request information, decline) confused testing; each action now opens its own form.
+- **Embedding Frame.io** was the first idea for reviews; it is not supported by Frame.io, so the page links to the review instead.

@@ -46,13 +46,13 @@ The start command is `python app.py` in both cases. On first boot the app create
 
 **Requester** (any BRASA board member or team lead, no account needed):
 1. On the home page, choose "Um vídeo". Regular editorial-calendar posts belong to the Comunicação ClickUp flow, not here.
-2. Fill in the briefing. Pick the type first: the questions adapt to it. The bar at the top shows how complete the briefing is, and the deadline notice says whether the date gives enough notice.
-3. Submit, then **keep the tracking link**: it is the only way back to the request. If the AV team asks for more information, the same page shows a form to complete and resubmit.
+2. Fill in the briefing. Pick the type first: the questions adapt to it, and some only appear when an answer makes them relevant (tick Instagram and you must choose the publishing account; choose the tone "Outro" and you describe it). The bar at the top shows how complete the briefing is, and the deadline notice says whether the date gives enough notice.
+3. Submit, then **keep the tracking link**: it is the only way back to the request. If the AV team asks for more information, the same page shows a form to complete and resubmit. When a cut is ready for review, the same page shows a "Sua vez de revisar" button that opens it on Frame.io, where you comment on the exact frame.
 4. After delivery you receive a feedback link (copied or e-mailed by the AV manager). Your answer closes the request, or sends it back to production if you ask for major changes.
 
 **AV manager** (`/admin`, shared password):
 1. The inbox lists every request with deadline, rush flag, status and briefing score, plus each person's open workload. Filter by status, type, diretoria or person.
-2. On a request, the available actions follow its status: accept (choose who produces; creates the ClickUp task), ask for information or decline (with a message to the requester), start production, send to review, request changes, deliver (with the Drive link), close, reopen, cancel. "Desfazer" undoes the last change when that is safe.
+2. On a request, the available actions follow its status: accept (choose who produces; creates the ClickUp task), ask for information or decline (with a message to the requester), start production, send to review (with the Frame.io review link), request changes, deliver (with the Drive link), close, reopen, cancel. Actions that need information open their own form when clicked. "Desfazer" undoes the last change when that is safe.
 3. After delivery, copy each feedback link or use the prepared e-mail link. The "copy Slack message" and Markdown export buttons help share the briefing.
 4. `/admin/metricas` shows rush share, turnaround, on-time rate, response rate, ratings by type and diretoria, and briefing score by outcome.
 
@@ -90,7 +90,7 @@ avdesk/                    the application                         → avdesk/RE
 ├── composition.py         composition root: builds and connects everything
 ├── config.py              settings from env vars (Singleton)
 ├── clock.py, tokens.py, task_tracker.py   adapters over time, randomness, ClickUp
-├── db.py                  connections, schema, idempotent seeding
+├── db.py                  connections, schema, migrations, reference data
 ├── requests_domain/       asking for and producing a video        → its README
 ├── feedback_domain/       feedback after delivery                 → its README
 ├── services/              the only code that knows both domains   → its README
@@ -133,8 +133,11 @@ SOLID shows up as: one job per class (SRP), questions and actions as data (OCP),
 Each convention exists because of something in the business:
 
 - **Business rules never touch Flask or SQL.** The rules that decide rush, validity or link expiry are the heart of the product and are tested without a server or database. Only `repository.py` files contain SQL; only `web/` imports Flask.
-- **The briefing is data.** Request types and questions live in `seed.json` (`[A CONFIRMAR]` until validated by the AV manager). The question set will keep changing as the team learns what context it needs, so it must change without code edits.
+- **The briefing is data.** Request types, questions and follow-up questions (a question with `depends_on`/`depends_value` appears only after a given answer) live in `seed.json` (`[A CONFIRMAR]` until validated by the AV manager). The question set will keep changing as the team learns what context it needs, so it must change without code edits, and it reaches existing databases on the next start.
+- **Reference data has two lifetimes.** Request types and questions follow `seed.json` on every boot; diretorias and analysts are seeded once, because requests point at them by id.
+- **Schema changes are migrations.** `schema.sql` always describes today's shape; every change to an existing table is also appended to `MIGRATIONS` in `db.py`, so databases already in use are upgraded on start instead of being recreated.
 - **Every status change goes through the action table** (`ACTIONS` in `lifecycle.py`). The status is the audited core of the triage process; no code updates it any other way, and every change writes a timeline row the requester can see.
+- **Reviews happen on Frame.io.** "Enviar para revisão" requires the Frame.io link, and the requester reviews there; the app links to it because Frame.io cannot be embedded.
 - **Changes that left the domain can't be undone.** Moves into or out of accepted (ClickUp task), delivered (feedback links) and closed are final; undo is for wrong clicks, not for rewriting history.
 - **Domains exchange copies, never references.** Events carry frozen snapshots, and feedback tables keep their own copy of the delivered request instead of a foreign key, so each domain can live in its own service later.
 - **Links are the authorisation.** Requesters and reviewers have no accounts (about 40 board members, a few hundred requests a year); an unguessable token in the URL grants access to exactly one request or one feedback form.
@@ -154,9 +157,9 @@ Each convention exists because of something in the business:
 .venv/bin/python -m pytest --cov=avdesk --cov-report=term-missing
 ```
 
-Latest result: **183 tests passed, 97% line coverage of `avdesk/`.** Core business logic: `leadtime.py` 100%, `lifecycle.py` 99%, `requests_domain/facade.py` 100%, `validators.py` 93%, `feedback_domain/rules.py` 100%, `feedback_domain/facade.py` 96%, `services/seam.py` 100%, `services/metrics.py` 100%.
+Latest result: **208 tests passed, 97% line coverage of `avdesk/`.** Core business logic: `leadtime.py` 100%, `lifecycle.py` 99%, `requests_domain/facade.py` 100%, `validators.py` 93%, `feedback_domain/rules.py` 100%, `feedback_domain/facade.py` 96%, `services/seam.py` 100%, `services/metrics.py` 100%.
 
-Pyramid: 114 unit tests (62%), 50 integration tests (27%, real SQLite in a temp dir), 19 end-to-end tests (10%, Flask test client). Unit tests sit below the 70–80% the testing slides recommend because the repositories and the two-domain seam are tested against a real database; see ADR-4 and [tests/README.md](tests/README.md).
+Pyramid: 128 unit tests (62%), 59 integration tests (28%, real SQLite in a temp dir), 21 end-to-end tests (10%, Flask test client). Unit tests sit below the 70–80% the testing slides recommend because the repositories and the two-domain seam are tested against a real database; see ADR-4 and [tests/README.md](tests/README.md).
 
 ## Container contract evidence (`container/run.sh`)
 
@@ -206,6 +209,7 @@ Note for Windows (Git Bash): the script calls `mktemp -t sdd-check`, which GNU `
 - Holidays in the lead-time rule: only weekends are non-working days.
 - Per-user accounts: requesters and reviewers are authorised by unguessable links, the admin by one shared password.
 - Background workers and message brokers (forbidden by §1c; Pub/Sub is Assignment 2).
+- Embedding Frame.io: Frame.io does not support being shown inside other sites, so the review opens on Frame.io itself.
 
 ## Documentation map
 
