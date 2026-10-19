@@ -57,7 +57,9 @@
     {{ text_field("needed_by", "Para quando você precisa do vídeo pronto?", briefing.needed_by.isoformat() if briefing.needed_by else "", errors, type="date") }}
     {{ text_field("needed_by_reason", "Por que essa data?", briefing.needed_by_reason, errors, help="Ex.: abertura das inscrições, dia da conferência.") }}
     <div id="deadline-notice" class="notice" hidden></div>
-    {{ text_field("rush_reason", "Se o prazo for curto, por que ele não pode mudar?", briefing.rush_reason, errors, type="textarea", required=False) }}
+    <div id="rush-reason-field">
+      {{ text_field("rush_reason", "O prazo é curto. Por que ele não pode mudar?", briefing.rush_reason, errors, type="textarea") }}
+    </div>
   </fieldset>
 
   {% for section in sections %}

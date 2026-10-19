@@ -3,7 +3,7 @@
 Pulled out of the facade (SRP) so submission and resubmission share one path
 and the facade only coordinates.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 
 from avdesk.clock import Clock
@@ -65,5 +65,9 @@ class BriefingIntake:
         shown = {q.key for q in catalog.questions_for(briefing.type_code, briefing.answers)}
         briefing = briefing.keep_answers(shown)
         assessment = self.assess(catalog, briefing.type_code, briefing.needed_by, briefing.needs_c_level_approval)
+        if not (assessment and assessment.rush):
+            # The reason box is only shown for a short deadline; a leftover
+            # answer would mislabel a normal request in the briefing and ClickUp.
+            briefing = replace(briefing, rush_reason="")
         errors = self._validator.validate(briefing, catalog, self._clock.today(), assessment)
         return CheckedBriefing(briefing, errors, assessment, self._scorer.score(briefing, catalog))

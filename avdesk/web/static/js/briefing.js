@@ -8,6 +8,7 @@
   const detailField = document.getElementById("type-detail-field");
   const detailLabel = document.getElementById("type-detail-label");
   const notice = document.getElementById("deadline-notice");
+  const rushReason = document.getElementById("rush-reason-field");
 
   function selectedType() {
     const checked = form.querySelector("input[name=type_code]:checked");
@@ -64,7 +65,7 @@
   function updateDeadline() {
     const type = selectedType();
     const neededBy = form.querySelector("[name=needed_by]").value;
-    if (!type || !neededBy) { notice.hidden = true; return; }
+    if (!type || !neededBy) { notice.hidden = true; rushReason.hidden = true; return; }
     const params = new URLSearchParams({
       type_code: type.value,
       needed_by: neededBy,
@@ -73,6 +74,7 @@
     fetch(form.dataset.deadlineUrl + "?" + params)
       .then(function (response) { return response.json(); })
       .then(function (result) {
+        rushReason.hidden = !result.rush;
         if (result.rush === undefined) { notice.hidden = true; return; }
         notice.hidden = false;
         notice.classList.toggle("notice-rush", result.rush);
@@ -82,7 +84,8 @@
             ". Você ainda pode enviar, explicando abaixo por que a data não pode mudar."
           : "Prazo ok: " + result.available_days + " dias até a entrega.";
       })
-      .catch(function () { notice.hidden = true; });
+      // If the check fails, keep the reason box visible: the server still decides.
+      .catch(function () { notice.hidden = true; rushReason.hidden = false; });
   }
 
   form.addEventListener("change", function (event) {
