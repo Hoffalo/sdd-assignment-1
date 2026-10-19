@@ -25,7 +25,7 @@ A rule never imports Flask or runs SQL. That is what lets about 75% of the tests
 | Proxy | `services.admin_guard.AdminOnly` | Admin-only pages and actions; a per-route `if admin` check can be forgotten. | Protection proxy with the same methods as the facade it wraps; every call is checked before it is forwarded. | `__getattr__` forwarding is less explicit than spelled-out methods. |
 | Facade | `RequestsFacade`, `FeedbackFacade` | Routes and services would otherwise need to know intake, lifecycle, repositories and events. | One entry point per domain makes the seam visible and maps directly to the service APIs of Assignment 2. | Risk of a god object; each facade only delegates, the rules live elsewhere. |
 | Observer | `RequestEventSubject` → `FeedbackInviteObserver`, `TaskTrackerObserver`; `FeedbackEventSubject` → `FeedbackOutcomeApplier` | Delivering must create invites and accepting must create a ClickUp task, without the requests domain knowing either exists. | The subject announces a status change; listeners are attached in the composition root. | In-process and synchronous: a slow listener (ClickUp) slows the click, and it cannot cross services. One failing observer is logged and does not stop the others. Assignment 2 replaces it with Pub/Sub. |
-| Strategy | `leadtime.LeadTimePolicy`: `StandardLeadTime`, `ConferenceLeadTime` | The deadline rule differs for conference content (COO review buffer and an earlier internal deadline). | Interchangeable policies behind `assess()`; callers never branch on the policy. | Two classes for a small rule today; justified because lead-time rules are expected to change per type. |
+| Strategy | `leadtime.LeadTimePolicy`: `StandardLeadTime`, `CLevelApprovalLeadTime` | The deadline rule differs when a video needs C-Level approval (an approval buffer and an earlier internal deadline). | Interchangeable policies behind `assess()`; callers never branch on the policy. | Two classes for a small rule today; justified because lead-time rules are expected to change per type. |
 | Command | `lifecycle.StatusChange` (+ `AcceptRequest`, `SendToReview`, `DeliverRequest`), `Lifecycle` invoker | Status changes are the audited core action, and a wrong click should be reversible. | Each change is an object with `execute()`/`undo()`; the repository is the receiver and writes the timeline row in the same transaction. | Undo is refused into or out of accepted, delivered and closed, because those already triggered work outside the domain (ClickUp task, feedback invites). The undo history lives in memory and is lost on restart. |
 
 Also present without being extra classes: the Repository idea (reader/writer ABCs) and Dependency Injection through constructors.
@@ -63,8 +63,14 @@ Also present without being extra classes: the Repository idea (reader/writer ABC
 
 ## 6. Confirmed by the AV manager (2026-10-18)
 
-- Minimum lead times: teaser 10, institucional 7, redes sociais 5, outro 10 business days.
-- COO review buffer for conference content: 3 business days.
+- Minimum lead times: teaser 10, institucional 7, redes sociais 5, outro 10 days.
+- Approval buffer when a video needs C-Level approval: 3 days.
+
+## 6b. Changes from testing (2026-10-19)
+
+- Lead time counts calendar days, weekends included: BRASA's AV team works weekends. The stored field became `min_lead_days` (migration).
+- "É conteúdo de conferência (passa pela revisão do COO)" became "Precisa de aprovação C-Level". The code follows the business term: `needs_c_level_approval` (column renamed by a migration), `CLevelApprovalLeadTime`, `C_LEVEL_APPROVAL_BUFFER_DAYS`.
+- The rush-reason box only appears when the deadline is short; a reason sent with a normal deadline is dropped.
 - "Vídeo para redes sociais" means social videos **outside** the editorial calendar; calendar posts keep their ClickUp flow, as the landing page says.
 
 ## 7. Open items
@@ -75,7 +81,7 @@ Also present without being extra classes: the Repository idea (reader/writer ABC
 
 ## 8. The current question set
 
-Every request asks for the fixed fields first: name, `@gobrasa.org` e-mail, diretoria, type (and, for redes sociais or outro, a free-text detail), title, campanha, whether it is conference content, due date and its reason, and a reason when the deadline is short. Then the questions below. "Follow-up" means the question appears only after the answer named.
+Every request asks for the fixed fields first: name, `@gobrasa.org` e-mail, diretoria, type (and, for redes sociais or outro, a free-text detail), title, campanha, whether it needs C-Level approval, due date and its reason, and a reason when the deadline is short. Then the questions below. "Follow-up" means the question appears only after the answer named.
 
 **Every type**
 

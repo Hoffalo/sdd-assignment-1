@@ -26,7 +26,7 @@
 <text x="230" y="318" fill="#F4F4F4" font-size="13" font-weight="700" text-anchor="middle">RequestsFacade (Facade)</text>
 <text x="80" y="350" fill="#252726" font-size="12" font-weight="400" text-anchor="start">intake.py · validators.py · BriefingScorer</text>
 <text x="80" y="367" fill="#252726" font-size="12" font-weight="400" text-anchor="start">briefing.py · Builder + Director</text>
-<text x="80" y="384" fill="#252726" font-size="12" font-weight="400" text-anchor="start">leadtime.py · Strategy (standard / conference)</text>
+<text x="80" y="384" fill="#252726" font-size="12" font-weight="400" text-anchor="start">leadtime.py · Strategy (standard / C-Level approval)</text>
 <text x="80" y="401" fill="#252726" font-size="12" font-weight="400" text-anchor="start">lifecycle.py · Command + Factory Method</text>
 <text x="80" y="418" fill="#252726" font-size="12" font-weight="400" text-anchor="start">events.py · Observer subject (StatusChanged)</text>
 <text x="80" y="435" fill="#252726" font-size="12" font-weight="400" text-anchor="start">repository.py · reader/writer ABCs + SQLite adapter</text>

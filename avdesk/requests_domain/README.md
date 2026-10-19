@@ -9,7 +9,7 @@ This domain owns everything from the moment someone asks for a video until it is
 | `models.py` | Vocabulary: `Status`, `RequestType`, `Question`, `Catalog`, `Request`, `RequestEvent` | Value objects |
 | `briefing.py` | The `Briefing` value object and how it is assembled | **Builder** + Director |
 | `validators.py` | Field-by-field checks with pt-BR messages | SRP, OCP (`ANSWER_CHECKS` table) |
-| `leadtime.py` | Business days and the rush rule | **Strategy** |
+| `leadtime.py` | Calendar-day lead time and the rush rule | **Strategy** |
 | `intake.py` | Clean → assess → validate → score, shared by submit and resubmit; also `BriefingScorer` | SRP |
 | `repository.py` | Reader/writer contracts and the SQLite adapter | ISP, **Adapter**, DIP |
 | `lifecycle.py` | The action table, status commands, the command factory, the undo history | **Command**, **Factory Method** |
@@ -36,16 +36,16 @@ A question with `depends_on` and `depends_value` is a follow-up: `Question.is_sh
 
 `BriefingScorer` reports the percentage of applicable questions answered. Validation decides whether a briefing *may* be submitted; the score measures *how much context* it carries beyond the minimum. Both are stored so metrics can test whether fuller briefings lead to better outcomes, which addresses the "vague request" problem.
 
-### Deadlines: business days, rush, and conference content
+### Deadlines: calendar days, rush, and C-Level approval
 
-`business_days_between` counts Monday to Friday after the start date. Holidays are deliberately not modelled, to keep the rule explainable (see "Out of scope" in the root README).
+`days_between` counts every calendar day after the start date, weekends included, because BRASA's AV team works weekends. Holidays are not modelled either. The minimum per type is stored as `min_lead_days`.
 
 | Policy | Required notice | Internal work deadline |
 |---|---|---|
 | `StandardLeadTime(min_days)` | the type's minimum | the requester's date |
-| `ConferenceLeadTime(min_days, coo_buffer_days)` | minimum + COO buffer | requester's date minus the buffer |
+| `CLevelApprovalLeadTime(min_days, approval_buffer_days)` | minimum + approval buffer | requester's date minus the buffer |
 
-Too little notice does **not** block a request. It flags it as rush, asks for a reason, and shows the earliest realistic date. The manager can still accept it, and the rush share appears in metrics. Minimum lead times, confirmed by the AV manager: teaser 10, institucional 7, redes sociais 5, outro 10 business days; COO buffer 3 business days.
+The approval policy applies when the requester ticks "Precisa de aprovação C-Level" (`needs_c_level_approval`). Too little notice does **not** block a request. It flags it as rush, asks for a reason (the box only appears then, and `BriefingIntake.check` drops a reason sent with a normal deadline), and shows the earliest realistic date. The manager can still accept it, and the rush share appears in metrics. Minimum lead times, confirmed by the AV manager: teaser 10, institucional 7, redes sociais 5, outro 10 days; approval buffer 3 days.
 
 ### The lifecycle
 

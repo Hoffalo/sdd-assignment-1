@@ -1,6 +1,6 @@
 # `tests/`: how we know it works
 
-208 tests, 97% line coverage of `avdesk/`, about 15 seconds for the whole suite.
+209 tests, 97% line coverage of `avdesk/`, about 15 seconds for the whole suite.
 
 ```bash
 .venv/bin/python -m pytest --cov=avdesk --cov-report=term-missing
@@ -19,8 +19,8 @@
 
 | Folder | Tests | Share | Scope | Database |
 |---|---|---|---|---|
-| `unit/` | 128 | 62% | One rule or class in isolation | None |
-| `integration/` | 59 | 28% | Repositories, seeding, migrations, facades, the real observer wiring | Real SQLite file in a temp folder |
+| `unit/` | 125 | 60% | One rule or class in isolation | None |
+| `integration/` | 63 | 30% | Repositories, seeding, migrations, facades, the real observer wiring | Real SQLite file in a temp folder |
 | `e2e/` | 21 | 10% | Whole journeys over HTTP | Real SQLite, via the full app |
 
 The class slides recommend 70–80% unit tests. We sit below on purpose (ADR-4): the riskiest code (atomic status transitions, idempotent seeding, single-use links, the missing cross-domain foreign key) only proves anything against a real database. Mocking SQLite to inflate the unit share would test the mocks, not the code.
@@ -33,7 +33,7 @@ The class slides recommend 70–80% unit tests. We sit below on purpose (ADR-4):
 |---|---|
 | `test_config.py` | Defaults, env overrides, SQLite path, insecure-password fallback, ClickUp enablement, Singleton reset |
 | `test_clock_and_tokens.py` | UTC clock, token length and uniqueness, `FixedClock` behaviour |
-| `test_leadtime.py` | Business-day counting (including weekends), both lead-time policies, policy choice |
+| `test_leadtime.py` | Calendar-day counting (weekends included), both lead-time policies, policy choice |
 | `test_briefing.py` | Builder and Director, every validation rule, the completeness score, follow-up questions (shown, required, scored only when their trigger is chosen) |
 | `test_lifecycle.py` | The full transition table, terminal states, factory rules, required inputs (analyst, note, review link, delivery link), undo rules, invoker history |
 | `test_request_events.py` | Subject notifies all observers, detach works, a failing observer does not stop others |
@@ -47,7 +47,7 @@ The class slides recommend 70–80% unit tests. We sit below on purpose (ADR-4):
 |---|---|
 | `test_database.py` | Schema on an empty dir, idempotent schema and seed, unknown seed table rejected, no FK from feedback into requests, FKs enforced, migrations on an old database (once, then harmless), catalog sync (edited and removed questions), seed-once tables untouched, incomplete synced rows rejected |
 | `test_request_repository.py` | Round-trips, public code, timeline, status guard (`StaleTransition`), allowed transition fields (including the review link), filters |
-| `test_requests_facade.py` | Submit valid/invalid, answer cleaning (other types and hidden follow-ups), rush, conference notice, perform + events, resubmit, undo, workload, Markdown export |
+| `test_requests_facade.py` | Submit valid/invalid, answer cleaning (other types and hidden follow-ups), rush (and dropping a rush reason for a normal deadline), C-Level approval notice, perform + events, resubmit, undo, workload, Markdown export |
 | `test_feedback_facade.py` | One token per recipient, snapshot stored, single use, invalid answers, expiry, events, response listing |
 | `test_seam_wiring.py` | The composition root's real wiring: acceptance → ClickUp, delivery → invites, approval closes, major changes reopen, reviewers don't move status, metrics combine both |
 

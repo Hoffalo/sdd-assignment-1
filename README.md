@@ -70,7 +70,7 @@ Every setting is an environment variable with a default. No `.env` file is neede
 | `SECRET_KEY` | derived from `ADMIN_PASSWORD` | Signs the session cookie; changing the password logs everyone out |
 | `FEEDBACK_TTL_DAYS` | `30` | Days a feedback link stays valid |
 | `WORKLOAD_WARN_THRESHOLD` | `3` | Open requests per person before the inbox warns |
-| `COO_REVIEW_BUFFER_DAYS` | `3` | Extra business days reserved for the COO review of conference content |
+| `C_LEVEL_APPROVAL_BUFFER_DAYS` | `3` | Extra days reserved for the approval round when a video needs C-Level approval |
 | `CLICKUP_API_TOKEN` | empty | ClickUp personal token; with `CLICKUP_LIST_ID` enables task creation |
 | `CLICKUP_LIST_ID` | empty | ClickUp list that receives one task per accepted request |
 
@@ -123,7 +123,7 @@ Full diagrams: [architecture](docs/diagrams/architecture.svg) and [database sche
 | Proxy | `AdminOnly` | One object enforces the admin login for every admin call |
 | Facade | `RequestsFacade`, `FeedbackFacade` | One front door per domain, the future service APIs |
 | Observer | Status-change and response subjects + listeners in `services/` | Delivery creates feedback and acceptance creates a ClickUp task without the domains knowing each other |
-| Strategy | `StandardLeadTime`, `ConferenceLeadTime` | Conference content needs extra notice for the COO review |
+| Strategy | `StandardLeadTime`, `CLevelApprovalLeadTime` | A video that needs C-Level approval needs extra notice for the approval round |
 | Command | `StatusChange`, `AcceptRequest`, `DeliverRequest`, `Lifecycle` | Every status change is audited and a wrong click can be undone |
 
 SOLID shows up as: one job per class (SRP), questions and actions as data (OCP), substitutable subclasses and fakes (LSP), reader/writer splits (ISP), contracts plus one composition root (DIP). Full reasoning and trade-offs: [docs/DESIGN_NOTES.md](docs/DESIGN_NOTES.md). Decisions: [ADR.md](ADR.md).
@@ -142,7 +142,8 @@ Each convention exists because of something in the business:
 - **Domains exchange copies, never references.** Events carry frozen snapshots, and feedback tables keep their own copy of the delivered request instead of a foreign key, so each domain can live in its own service later.
 - **Links are the authorisation.** Requesters and reviewers have no accounts (about 40 board members, a few hundred requests a year); an unguessable token in the URL grants access to exactly one request or one feedback form.
 - **Too little notice is flagged, not blocked.** Real deadlines sometimes can't move; the app asks why, shows the earliest realistic date, and makes rush visible in the inbox and metrics.
-- **Business days only.** Lead time counts Monday to Friday; holidays are deliberately not modelled.
+- **Calendar days.** BRASA's AV team works weekends, so lead time counts every day, weekends included; holidays are not modelled either.
+- **The rush reason appears only for a short deadline.** The form asks why the date can't move only when the deadline is short, and a reason sent with a normal deadline is dropped.
 - **Only the requester's feedback moves the request.** Reviewers' answers count in metrics but never close or reopen anything.
 - **Placeholders are explicit.** Unknown BRASA data is marked `[A CONFIRMAR]` and never invented. Seeded analysts have generic names ("Analista AV 1"), never real people.
 - **Language.** UI text, URLs and business codes (`redes_sociais`, `objetivo`, `/pedido/novo`) are Brazilian Portuguese and follow BRASA's language rules ("a BRASA", "estudante", "conferência", product names in full). Code identifiers, comments and docs are English.
@@ -157,9 +158,9 @@ Each convention exists because of something in the business:
 .venv/bin/python -m pytest --cov=avdesk --cov-report=term-missing
 ```
 
-Latest result: **208 tests passed, 97% line coverage of `avdesk/`.** Core business logic: `leadtime.py` 100%, `lifecycle.py` 99%, `requests_domain/facade.py` 100%, `validators.py` 93%, `feedback_domain/rules.py` 100%, `feedback_domain/facade.py` 96%, `services/seam.py` 100%, `services/metrics.py` 100%.
+Latest result: **209 tests passed, 97% line coverage of `avdesk/`.** Core business logic: `leadtime.py` 100%, `lifecycle.py` 99%, `requests_domain/facade.py` 100%, `validators.py` 93%, `feedback_domain/rules.py` 100%, `feedback_domain/facade.py` 96%, `services/seam.py` 100%, `services/metrics.py` 100%.
 
-Pyramid: 128 unit tests (62%), 59 integration tests (28%, real SQLite in a temp dir), 21 end-to-end tests (10%, Flask test client). Unit tests sit below the 70–80% the testing slides recommend because the repositories and the two-domain seam are tested against a real database; see ADR-4 and [tests/README.md](tests/README.md).
+Pyramid: 125 unit tests (60%), 63 integration tests (30%, real SQLite in a temp dir), 21 end-to-end tests (10%, Flask test client). Unit tests sit below the 70–80% the testing slides recommend because the repositories and the two-domain seam are tested against a real database; see ADR-4 and [tests/README.md](tests/README.md).
 
 ## Container contract evidence (`container/run.sh`)
 
@@ -206,7 +207,7 @@ Note for Windows (Git Bash): the script calls `mktemp -t sdd-check`, which GNU `
 
 - Outbound e-mail or Slack posting: the admin page has copy buttons and a `mailto:` link instead.
 - Google Drive integration and file uploads: deliveries are Drive links.
-- Holidays in the lead-time rule: only weekends are non-working days.
+- Holidays in the lead-time rule: every calendar day counts.
 - Per-user accounts: requesters and reviewers are authorised by unguessable links, the admin by one shared password.
 - Background workers and message brokers (forbidden by §1c; Pub/Sub is Assignment 2).
 - Embedding Frame.io: Frame.io does not support being shown inside other sites, so the review opens on Frame.io itself.

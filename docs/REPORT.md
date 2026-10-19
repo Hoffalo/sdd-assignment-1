@@ -6,7 +6,7 @@
 
 BRASA is the largest association of Brazilian students abroad. As its Audiovisual manager, I receive requests for videos (teasers, institutional videos, social videos outside the editorial calendar) through scattered Slack threads. The same five problems repeat: vague asks, deadlines that arrive too late, tone that is wrong and only noticed at delivery, no visibility on progress, and no structured feedback afterwards.
 
-AV Desk is the tool that fixes those five problems. A board member fills a briefing whose questions adapt to the type of video and to their answers. A business-day rule flags requests that give too little notice. The request moves through a lifecycle in my triage inbox, which creates a ClickUp task when it is accepted. Cuts are reviewed on Frame.io from the requester's tracking page. On delivery, single-use feedback links collect ratings, and the requester's verdict closes or reopens the request. A metrics page turns all of it into turnaround, on-time rate and quality by type and diretoria.
+AV Desk is the tool that fixes those five problems. A board member fills a briefing whose questions adapt to the type of video and to their answers. A lead-time rule in calendar days (the team works weekends) flags requests that give too little notice, adding an approval round when a video needs C-Level approval. The request moves through a lifecycle in my triage inbox, which creates a ClickUp task when it is accepted. Cuts are reviewed on Frame.io from the requester's tracking page. On delivery, single-use feedback links collect ratings, and the requester's verdict closes or reopens the request. A metrics page turns all of it into turnaround, on-time rate and quality by type and diretoria.
 
 Assumed scale (an assumption used for design decisions, not a measurement): about 40 board members as requesters, a few hundred requests a year. That scale is why there are no user accounts (unguessable links instead) and no caching layer.
 
@@ -20,7 +20,7 @@ Assumed scale (an assumption used for design decisions, not a measurement): abou
 |---|---|
 | G1. The container contract (`container/run.sh`) passes by 2026-10-10. | Late: the application was ready on 2026-10-10, but Docker Desktop could not be started from the terminal; the first passing run was 2026-10-17, re-run on 2026-10-18 after the database changes. |
 | G2. Both domains working end to end through SQLite by 2026-10-10. | Met: both domains, the seam and all pages were built on 2026-10-10. |
-| G3. ≥70% coverage of core business logic by 2026-10-12. | Exceeded: 97% overall, 99–100% on the lead-time, lifecycle, facade, feedback-rule, seam and metrics modules (208 tests). |
+| G3. ≥70% coverage of core business logic by 2026-10-12. | Exceeded: 97% overall, 99–100% on the lead-time, lifecycle, facade, feedback-rule, seam and metrics modules (209 tests). |
 | G4. Five ADRs across ≥3 commit dates by 2026-10-12. | Partly met: ADR-1–3 on 2026-10-10, ADR-4 on 2026-10-17, ADR-5 on 2026-10-18; three dates, but later than planned. |
 | G5. 12+ commits over 6+ days, no day above 40%. | Not met: 40+ commits, but over 4 days, with 2026-10-10 holding more than half (the professor allowed the day rule to flex). |
 
@@ -72,10 +72,10 @@ Each code directory has its own README.
 
 ## 6. Testing
 
-208 pytest tests, 97% line coverage of `avdesk/`. The pyramid is:
+209 pytest tests, 97% line coverage of `avdesk/`. The pyramid is:
 
-- **128 unit tests (62%):** rules in isolation, with an injected `FixedClock`, predictable tokens and `mocker` mocks;
-- **59 integration tests (28%):** real SQLite in a temporary folder (repositories, migrations, catalog sync, facades, the real seam wiring);
+- **125 unit tests (60%):** rules in isolation, with an injected `FixedClock`, predictable tokens and `mocker` mocks;
+- **63 integration tests (30%):** real SQLite in a temporary folder (repositories, migrations, catalog sync, facades, the real seam wiring);
 - **21 end-to-end tests (10%):** whole journeys through Flask's test client.
 
 The unit share sits below the slides' 70–80% on purpose. The riskiest code (atomic status transitions guarded by the expected status, single-use links, idempotent startup, the missing cross-domain foreign key) only proves anything against a real database (ADR-4). Templates and JavaScript are covered only indirectly.
