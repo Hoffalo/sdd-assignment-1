@@ -146,3 +146,15 @@ def test_answers_to_hidden_questions_are_dropped_on_submit(facade, director):
                                                destinos=("YouTube",), instagram_principal="@gobrasa"))
 
     assert {"tom_outro", "instagram_principal"}.isdisjoint(request.briefing.answers)
+
+
+def test_a_rush_reason_is_dropped_when_the_deadline_is_not_short(facade, director):
+    _, request = facade.submit(director.teaser(needed_by=FAR_AWAY, rush_reason="Só por garantia"))
+
+    assert request.briefing.rush_reason == ""
+
+
+def test_a_rush_reason_is_kept_when_the_deadline_is_short(facade, director):
+    _, request = facade.submit(director.teaser(needed_by=date(2026, 10, 14), rush_reason="Patrocinador confirmou ontem"))
+
+    assert request.briefing.rush_reason == "Patrocinador confirmou ontem"
