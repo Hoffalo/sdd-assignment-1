@@ -24,7 +24,7 @@ class Briefing:
     type_detail: str = ""
     title: str = ""
     campaign: str = ""
-    for_conference: bool = False
+    needs_c_level_approval: bool = False
     needed_by: date | None = None
     needed_by_reason: str = ""
     rush_reason: str = ""
@@ -64,8 +64,8 @@ class BriefingBuilder:
         self._fields["campaign"] = campaign
         return self
 
-    def for_conference(self, flag: bool = True) -> "BriefingBuilder":
-        self._fields["for_conference"] = flag
+    def needs_c_level_approval(self, flag: bool = True) -> "BriefingBuilder":
+        self._fields["needs_c_level_approval"] = flag
         return self
 
     def deadline(self, needed_by: date | None, reason: str) -> "BriefingBuilder":
@@ -120,7 +120,7 @@ class BriefingDirector:
             "type_detail": "",
             "title": "Vídeo de exemplo",
             "campaign": "",
-            "for_conference": False,
+            "needs_c_level_approval": False,
             "needed_by_reason": "Data de lançamento",
             "rush_reason": "",
         }
@@ -132,7 +132,7 @@ class BriefingDirector:
                    .request_type(type_code, core["type_detail"])
                    .title(core["title"])
                    .campaign(core["campaign"])
-                   .for_conference(core["for_conference"])
+                   .needs_c_level_approval(core["needs_c_level_approval"])
                    .deadline(needed_by, core["needed_by_reason"])
                    .rush_reason(core["rush_reason"]))
         for key, value in answers.items():

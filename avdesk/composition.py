@@ -38,14 +38,14 @@ class AppServices:
 
 
 def build_requests_domain(database: Database, clock: Clock, tokens: TokenGenerator,
-                          coo_buffer_days: int) -> tuple[RequestsFacade, RequestEventSubject]:
+                          approval_buffer_days: int) -> tuple[RequestsFacade, RequestEventSubject]:
     repository = SqliteRequestRepository(database)
     events = RequestEventSubject()
     facade = RequestsFacade(
         catalog_reader=SqliteCatalogReader(database),
         reader=repository,
         writer=repository,
-        intake=BriefingIntake(BriefingValidator(), BriefingScorer(), clock, coo_buffer_days),
+        intake=BriefingIntake(BriefingValidator(), BriefingScorer(), clock, approval_buffer_days),
         commands=StatusCommandFactory(repository, clock),
         lifecycle=Lifecycle(),
         events=events,
@@ -72,7 +72,7 @@ def build_task_tracker(config: Config) -> TaskTracker:
 
 def build_services(config: Config, database: Database, clock: Clock, tokens: TokenGenerator,
                    tracker: TaskTracker) -> AppServices:
-    requests, request_events = build_requests_domain(database, clock, tokens, config.coo_review_buffer_days)
+    requests, request_events = build_requests_domain(database, clock, tokens, config.approval_buffer_days)
     feedback, feedback_events = build_feedback_domain(database, clock, tokens, config.feedback_ttl_days)
 
     request_events.attach(FeedbackInviteObserver(feedback))

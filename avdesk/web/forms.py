@@ -48,7 +48,7 @@ def briefing_from_form(form: MultiDict, catalog: Catalog) -> Briefing:
                .request_type(form.get("type_code", ""), form.get("type_detail", ""))
                .title(form.get("title", ""))
                .campaign(form.get("campaign", ""))
-               .for_conference(form.get("for_conference") == "sim")
+               .needs_c_level_approval(form.get("needs_c_level_approval") == "sim")
                .deadline(parse_date(form.get("needed_by")), form.get("needed_by_reason", ""))
                .rush_reason(form.get("rush_reason", "")))
     for question in catalog.questions:

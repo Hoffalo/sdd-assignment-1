@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS requests (
     type_detail       TEXT NOT NULL DEFAULT '',
     title             TEXT NOT NULL,
     campaign          TEXT NOT NULL DEFAULT '',
-    for_conference    INTEGER NOT NULL DEFAULT 0 CHECK (for_conference IN (0, 1)),
+    needs_c_level_approval    INTEGER NOT NULL DEFAULT 0 CHECK (needs_c_level_approval IN (0, 1)),
     needed_by         TEXT NOT NULL,
     needed_by_reason  TEXT NOT NULL,
     rush              INTEGER NOT NULL DEFAULT 0 CHECK (rush IN (0, 1)),

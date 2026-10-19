@@ -47,8 +47,8 @@
     {{ text_field("title", "Título do pedido", briefing.title, errors, help="Um nome curto para todo mundo saber de qual vídeo estamos falando.") }}
     {{ text_field("campaign", "Campanha", briefing.campaign, errors, required=False, help="A qual campanha, conferência ou produto da BRASA o vídeo pertence?") }}
     <div class="field">
-      <label><input type="checkbox" name="for_conference" value="sim"{% if briefing.for_conference %} checked{% endif %}>
-        É conteúdo de conferência (passa pela revisão do COO)</label>
+      <label><input type="checkbox" name="needs_c_level_approval" value="sim"{% if briefing.needs_c_level_approval %} checked{% endif %}>
+        Precisa de aprovação C-Level</label>
     </div>
   </fieldset>
 

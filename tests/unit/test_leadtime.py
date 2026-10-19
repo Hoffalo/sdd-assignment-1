@@ -3,7 +3,7 @@ from datetime import date
 import pytest
 
 from avdesk.requests_domain.leadtime import (
-    ConferenceLeadTime,
+    CLevelApprovalLeadTime,
     StandardLeadTime,
     days_between,
     lead_time_policy_for,
@@ -49,20 +49,20 @@ def test_standard_policy_works_until_the_needed_by_date():
     assert assessment.work_deadline == date(2026, 11, 6)
 
 
-def test_conference_policy_requires_extra_days_for_the_approval_round():
-    assessment = ConferenceLeadTime(min_days=10, coo_buffer_days=3).assess(FRIDAY, date(2026, 10, 19))
+def test_c_level_policy_requires_extra_days_for_the_approval_round():
+    assessment = CLevelApprovalLeadTime(min_days=10, approval_buffer_days=3).assess(FRIDAY, date(2026, 10, 19))
 
     assert (assessment.rush, assessment.earliest_date) == (True, date(2026, 10, 22))
 
 
-def test_conference_policy_moves_the_work_deadline_before_the_approval_round():
-    assessment = ConferenceLeadTime(min_days=10, coo_buffer_days=3).assess(FRIDAY, date(2026, 11, 8))
+def test_c_level_policy_moves_the_work_deadline_before_the_approval_round():
+    assessment = CLevelApprovalLeadTime(min_days=10, approval_buffer_days=3).assess(FRIDAY, date(2026, 11, 8))
 
     assert assessment.work_deadline == date(2026, 11, 5)
 
 
-@pytest.mark.parametrize("for_conference, expected", [(False, StandardLeadTime), (True, ConferenceLeadTime)])
-def test_policy_is_chosen_by_conference_flag(for_conference, expected):
-    policy = lead_time_policy_for(min_days=10, for_conference=for_conference, coo_buffer_days=3)
+@pytest.mark.parametrize("needs_c_level_approval, expected", [(False, StandardLeadTime), (True, CLevelApprovalLeadTime)])
+def test_policy_is_chosen_by_c_level_approval_flag(needs_c_level_approval, expected):
+    policy = lead_time_policy_for(min_days=10, needs_c_level_approval=needs_c_level_approval, approval_buffer_days=3)
 
     assert isinstance(policy, expected)

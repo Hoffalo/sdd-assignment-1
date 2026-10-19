@@ -27,7 +27,7 @@ class Config:
     secret_key: str
     feedback_ttl_days: int
     workload_warn_threshold: int
-    coo_review_buffer_days: int
+    approval_buffer_days: int
     clickup_api_token: str
     clickup_list_id: str
     admin_password_is_default: bool
@@ -47,7 +47,7 @@ class Config:
             secret_key=secret_key,
             feedback_ttl_days=int(env.get("FEEDBACK_TTL_DAYS", "30")),
             workload_warn_threshold=int(env.get("WORKLOAD_WARN_THRESHOLD", "3")),
-            coo_review_buffer_days=int(env.get("COO_REVIEW_BUFFER_DAYS", "3")),
+            approval_buffer_days=int(env.get("C_LEVEL_APPROVAL_BUFFER_DAYS", "3")),
             clickup_api_token=env.get("CLICKUP_API_TOKEN", ""),
             clickup_list_id=env.get("CLICKUP_LIST_ID", ""),
             admin_password_is_default=not password,

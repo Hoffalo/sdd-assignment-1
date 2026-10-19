@@ -21,7 +21,7 @@ def make_event(to_status: Status, reviewers=("Bruno",)) -> StatusChanged:
     snapshot = RequestSnapshot(
         request_id=3, public_code="AV-2026-0003", title="Teaser", type_code="teaser", type_label="Teaser",
         diretoria="Conferências", campaign="", requester_name="Ana", requester_email="ana@gobrasa.org",
-        reviewers=reviewers, needed_by=date(2026, 10, 20), for_conference=False, rush=True,
+        reviewers=reviewers, needed_by=date(2026, 10, 20), needs_c_level_approval=False, rush=True,
         summary_markdown="# AV-2026-0003", delivery_url="https://drive.google.com/x", delivered_at=DELIVERED_AT)
     return StatusChanged(snapshot, Status.IN_REVIEW, to_status)
 

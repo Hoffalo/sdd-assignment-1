@@ -14,7 +14,7 @@ FAR_AWAY = date(2026, 12, 1)
 
 @pytest.fixture
 def domain(seeded_db, clock, tokens):
-    return build_requests_domain(seeded_db, clock, tokens, coo_buffer_days=3)
+    return build_requests_domain(seeded_db, clock, tokens, approval_buffer_days=3)
 
 
 @pytest.fixture
@@ -55,11 +55,11 @@ def test_short_deadline_with_reason_is_stored_as_rush(facade, director):
     assert request.rush
 
 
-def test_conference_content_needs_more_notice(facade):
-    plain = facade.assess_deadline("teaser", date(2026, 10, 21), for_conference=False)
-    conference = facade.assess_deadline("teaser", date(2026, 10, 21), for_conference=True)
+def test_content_needing_c_level_approval_needs_more_notice(facade):
+    plain = facade.assess_deadline("teaser", date(2026, 10, 21), needs_c_level_approval=False)
+    approval = facade.assess_deadline("teaser", date(2026, 10, 21), needs_c_level_approval=True)
 
-    assert (plain.rush, conference.rush) == (False, True)
+    assert (plain.rush, approval.rush) == (False, True)
 
 
 def test_perform_moves_the_request_and_logs_the_timeline(facade, submitted):

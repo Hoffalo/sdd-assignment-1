@@ -44,8 +44,8 @@ class RequestsFacade:
     def catalog(self) -> Catalog:
         return self._catalog_reader.load()
 
-    def assess_deadline(self, type_code: str, needed_by, for_conference: bool) -> LeadTimeAssessment | None:
-        return self._intake.assess(self.catalog(), type_code, needed_by, for_conference)
+    def assess_deadline(self, type_code: str, needed_by, needs_c_level_approval: bool) -> LeadTimeAssessment | None:
+        return self._intake.assess(self.catalog(), type_code, needed_by, needs_c_level_approval)
 
     def submit(self, briefing: Briefing) -> tuple[CheckedBriefing, Request | None]:
         checked = self._intake.check(briefing, self.catalog())
@@ -129,7 +129,7 @@ class RequestsFacade:
             type_code=briefing.type_code, type_label=request_type.label if request_type else briefing.type_code,
             diretoria=diretoria.name if diretoria else "", campaign=briefing.campaign,
             requester_name=briefing.requester_name, requester_email=briefing.requester_email,
-            reviewers=briefing.reviewers, needed_by=briefing.needed_by, for_conference=briefing.for_conference,
+            reviewers=briefing.reviewers, needed_by=briefing.needed_by, needs_c_level_approval=briefing.needs_c_level_approval,
             rush=request.rush, summary_markdown=briefing_markdown(request, catalog),
             delivery_url=request.delivery_url, delivered_at=request.delivered_at,
         )

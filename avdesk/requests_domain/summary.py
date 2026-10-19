@@ -29,7 +29,7 @@ def briefing_markdown(request: Request, catalog: Catalog) -> str:
         f" · {diretoria.name if diretoria else '—'}",
         f"- **Campanha:** {briefing.campaign or '—'}",
         f"- **Prazo:** {briefing.needed_by:%d/%m/%Y} ({briefing.needed_by_reason})",
-        f"- **Conteúdo de conferência:** {'Sim' if briefing.for_conference else 'Não'}",
+        f"- **Precisa de aprovação C-Level:** {'Sim' if briefing.needs_c_level_approval else 'Não'}",
         f"- **Briefing completo:** {request.briefing_score}%",
     ]
     if request.rush:

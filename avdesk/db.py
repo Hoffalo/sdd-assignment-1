@@ -25,6 +25,7 @@ MIGRATIONS = (
     "ALTER TABLE briefing_questions ADD COLUMN depends_value TEXT",
     "ALTER TABLE requests ADD COLUMN review_url TEXT",
     "ALTER TABLE request_types RENAME COLUMN min_lead_business_days TO min_lead_days",
+    "ALTER TABLE requests RENAME COLUMN for_conference TO needs_c_level_approval",
 )
 
 # The briefing catalog is configuration owned by seed.json, so it follows the

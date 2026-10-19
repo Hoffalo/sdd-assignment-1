@@ -10,7 +10,7 @@ def make_event(to_status=Status.DELIVERED) -> StatusChanged:
     snapshot = RequestSnapshot(
         request_id=1, public_code="AV-2026-0001", title="Teaser", type_code="teaser", type_label="Teaser",
         diretoria="Conferências", campaign="", requester_name="Ana", requester_email="ana@gobrasa.org",
-        reviewers=(), needed_by=date(2026, 12, 1), for_conference=False, rush=False, summary_markdown="#")
+        reviewers=(), needed_by=date(2026, 12, 1), needs_c_level_approval=False, rush=False, summary_markdown="#")
     return StatusChanged(snapshot, Status.IN_REVIEW, to_status)
 
 

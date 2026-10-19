@@ -98,7 +98,7 @@ def old_db(tmp_path):
     with database.connect() as conn:
         conn.execute("CREATE TABLE request_types (code TEXT PRIMARY KEY, min_lead_business_days INTEGER)")
         conn.execute("CREATE TABLE briefing_questions (key TEXT PRIMARY KEY)")
-        conn.execute("CREATE TABLE requests (id INTEGER PRIMARY KEY, status TEXT)")
+        conn.execute("CREATE TABLE requests (id INTEGER PRIMARY KEY, status TEXT, for_conference INTEGER)")
     return database
 
 
@@ -117,6 +117,12 @@ def test_an_old_database_counts_lead_time_in_calendar_days(old_db):
     create_schema(old_db)
 
     assert "min_lead_days" in columns(old_db, "request_types")
+
+
+def test_an_old_database_records_c_level_approval_under_its_new_name(old_db):
+    create_schema(old_db)
+
+    assert "needs_c_level_approval" in columns(old_db, "requests")
 
 
 def test_upgrading_twice_is_harmless(old_db):

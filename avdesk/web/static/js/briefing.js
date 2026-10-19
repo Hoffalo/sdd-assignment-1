@@ -68,7 +68,7 @@
     const params = new URLSearchParams({
       type_code: type.value,
       needed_by: neededBy,
-      for_conference: form.querySelector("[name=for_conference]").checked ? "sim" : "",
+      needs_c_level_approval: form.querySelector("[name=needs_c_level_approval]").checked ? "sim" : "",
     });
     fetch(form.dataset.deadlineUrl + "?" + params)
       .then(function (response) { return response.json(); })
@@ -86,7 +86,7 @@
   }
 
   form.addEventListener("change", function (event) {
-    if (["type_code", "needed_by", "for_conference"].includes(event.target.name)) {
+    if (["type_code", "needed_by", "needs_c_level_approval"].includes(event.target.name)) {
       updateTypeDetail();
       updateDeadline();
     }

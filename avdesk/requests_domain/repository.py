@@ -79,13 +79,13 @@ def _decode_answers(raw: str) -> dict:
 
 
 _BRIEFING_COLUMNS = ("requester_name", "requester_email", "diretoria_id", "type_code", "type_detail", "title",
-                     "campaign", "for_conference", "needed_by", "needed_by_reason", "rush_reason", "answers_json")
+                     "campaign", "needs_c_level_approval", "needed_by", "needed_by_reason", "rush_reason", "answers_json")
 
 
 def _briefing_values(briefing: Briefing) -> list[Any]:
     return [briefing.requester_name.strip(), briefing.requester_email.strip().lower(), briefing.diretoria_id,
             briefing.type_code, briefing.type_detail.strip(), briefing.title.strip(), briefing.campaign.strip(),
-            int(briefing.for_conference), _iso(briefing.needed_by), briefing.needed_by_reason.strip(),
+            int(briefing.needs_c_level_approval), _iso(briefing.needed_by), briefing.needed_by_reason.strip(),
             briefing.rush_reason.strip(), json.dumps(dict(briefing.answers), ensure_ascii=False)]
 
 
@@ -93,7 +93,7 @@ def _to_request(row) -> Request:
     briefing = Briefing(
         requester_name=row["requester_name"], requester_email=row["requester_email"],
         diretoria_id=row["diretoria_id"], type_code=row["type_code"], type_detail=row["type_detail"],
-        title=row["title"], campaign=row["campaign"], for_conference=bool(row["for_conference"]),
+        title=row["title"], campaign=row["campaign"], needs_c_level_approval=bool(row["needs_c_level_approval"]),
         needed_by=date.fromisoformat(row["needed_by"]), needed_by_reason=row["needed_by_reason"],
         rush_reason=row["rush_reason"], answers=_decode_answers(row["answers_json"]),
     )

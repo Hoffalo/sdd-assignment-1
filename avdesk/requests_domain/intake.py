@@ -46,24 +46,24 @@ class CheckedBriefing:
 
 
 class BriefingIntake:
-    def __init__(self, validator: BriefingValidator, scorer: BriefingScorer, clock: Clock, coo_buffer_days: int):
+    def __init__(self, validator: BriefingValidator, scorer: BriefingScorer, clock: Clock, approval_buffer_days: int):
         self._validator = validator
         self._scorer = scorer
         self._clock = clock
-        self._coo_buffer_days = coo_buffer_days
+        self._approval_buffer_days = approval_buffer_days
 
     def assess(self, catalog: Catalog, type_code: str, needed_by: date | None,
-               for_conference: bool) -> LeadTimeAssessment | None:
+               needs_c_level_approval: bool) -> LeadTimeAssessment | None:
         request_type = catalog.type(type_code)
         today = self._clock.today()
         if request_type is None or needed_by is None or needed_by <= today:
             return None
-        policy = lead_time_policy_for(request_type.min_lead_days, for_conference, self._coo_buffer_days)
+        policy = lead_time_policy_for(request_type.min_lead_days, needs_c_level_approval, self._approval_buffer_days)
         return policy.assess(today, needed_by)
 
     def check(self, briefing: Briefing, catalog: Catalog) -> CheckedBriefing:
         shown = {q.key for q in catalog.questions_for(briefing.type_code, briefing.answers)}
         briefing = briefing.keep_answers(shown)
-        assessment = self.assess(catalog, briefing.type_code, briefing.needed_by, briefing.for_conference)
+        assessment = self.assess(catalog, briefing.type_code, briefing.needed_by, briefing.needs_c_level_approval)
         errors = self._validator.validate(briefing, catalog, self._clock.today(), assessment)
         return CheckedBriefing(briefing, errors, assessment, self._scorer.score(briefing, catalog))

@@ -115,7 +115,7 @@
   {% set request_type = catalog.type(briefing.type_code) %}
   <p><strong>Solicitante:</strong> {{ briefing.requester_name }} &lt;{{ briefing.requester_email }}&gt; · {{ catalog.diretoria(briefing.diretoria_id).name }}</p>
   <p><strong>Tipo:</strong> {{ request_type.label }}{% if briefing.type_detail %} ({{ briefing.type_detail }}){% endif %}
-    {% if briefing.for_conference %} · conteúdo de conferência{% endif %}</p>
+    {% if briefing.needs_c_level_approval %} · precisa de aprovação C-Level{% endif %}</p>
   <p><strong>Campanha:</strong> {{ briefing.campaign or "—" }}</p>
   <p><strong>Prazo:</strong> {{ briefing.needed_by.strftime("%d/%m/%Y") }} · {{ briefing.needed_by_reason }}</p>
   {% if tracked.rush %}<p class="notice notice-rush"><strong>Prazo curto:</strong> {{ briefing.rush_reason }}</p>{% endif %}

@@ -30,7 +30,7 @@ class RequestSnapshot:
     requester_email: str
     reviewers: tuple[str, ...]
     needed_by: date
-    for_conference: bool
+    needs_c_level_approval: bool
     rush: bool
     summary_markdown: str
     delivery_url: str | None = None

@@ -42,7 +42,7 @@ def deadline_check():
     """Lets the form explain the lead-time rule live, using the same Python policy as submission."""
     assessment = services().requests.assess_deadline(
         request.args.get("type_code", ""), parse_date(request.args.get("needed_by")),
-        request.args.get("for_conference") == "sim")
+        request.args.get("needs_c_level_approval") == "sim")
     if assessment is None:
         return jsonify({})
     return jsonify(rush=assessment.rush, available_days=assessment.available_days,
