@@ -1,0 +1,5 @@
+# Test tooling, installed locally and in CI but never in the image.
+-r requirements.txt
+pytest==9.1.1
+pytest-cov==7.1.0
+pytest-mock==3.16.0

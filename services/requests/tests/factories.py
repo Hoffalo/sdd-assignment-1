@@ -1,0 +1,26 @@
+"""Small, hand-made reference data so unit tests never depend on seed.json."""
+from avdesk_requests.domain.models import Analyst, Catalog, Diretoria, Question, RequestType
+
+
+def make_catalog() -> Catalog:
+    return Catalog(
+        types=(
+            RequestType("teaser", "Teaser", 10, None),
+            RequestType("redes_sociais", "Vídeo para redes sociais", 7, "Qual formato?"),
+            RequestType("outro", "Outro", 10, "Descreva"),
+        ),
+        questions=(
+            Question("objetivo", None, "Objetivo", "Objetivo?", "textarea", (), True),
+            Question("tom", None, "Tom", "Tom?", "choice", ("Inspirador", "Institucional", "Outro"), True),
+            Question("tom_outro", None, "Tom", "Qual tom?", "textarea", (), True,
+                     depends_on="tom", depends_value="Outro"),
+            Question("destinos", None, "Onde", "Onde?", "multichoice", ("YouTube", "Instagram"), False),
+            Question("instagram_principal", None, "Onde", "Conta principal?", "choice", ("@gobrasa", "@redegobrasa"),
+                     True, depends_on="destinos", depends_value="Instagram"),
+            Question("roteiro_url", None, "Material", "Roteiro?", "url", (), False),
+            Question("teaser_anuncio", "teaser", "Teaser", "Anuncia o quê?", "text", (), True),
+            Question("outro_justificativa", "outro", "Outro", "Por quê?", "textarea", (), True),
+        ),
+        diretorias=(Diretoria(1, "Comunicação"), Diretoria(2, "Conferências")),
+        analysts=(Analyst(1, "Analista AV 1"),),
+    )
