@@ -5,6 +5,7 @@ from avdesk_feedback.domain.facade import FeedbackFacade
 from avdesk_feedback.domain.metrics import feedback_metrics
 from avdesk_feedback.domain.models import InviteState
 from avdesk_feedback.web.admin_guard import AdminOnly, AdminRequired, AdminTokens, bearer_token
+from avdesk_feedback.web.invite_input import InvalidDelivery, delivery_from_json
 from avdesk_feedback.web.json_views import admin_invite_json, metrics_json, public_invite_json
 
 blueprint = Blueprint("feedback", __name__)
@@ -32,6 +33,22 @@ def form_values() -> dict[str, str]:
     return {k: str(v) for k, v in body.items() if isinstance(v, (str, int)) and not isinstance(v, bool)}
 
 
+def is_service_call() -> bool:
+    tokens: AdminTokens = current_app.extensions["avdesk_service_tokens"]
+    return tokens.is_valid(bearer_token(request.headers.get("Authorization")))
+
+
+@blueprint.post("/invites")
+def create_invites():
+    if not is_service_call():
+        return jsonify(error="Service token required."), 401
+    try:
+        work, recipients = delivery_from_json(request.get_json(silent=True))
+    except InvalidDelivery as error:
+        return jsonify(error=str(error)), 422
+    return jsonify([admin_invite_json(i) for i in feedback_facade().create_invites(work, recipients)]), 201
+
+
 @blueprint.get("/invites/<token>")
 def open_invite(token):
     invite, state = feedback_facade().open_invite(token)
@@ -51,6 +68,17 @@ def submit_response(token):
 @blueprint.get("/admin/requests/<int:request_id>/invites")
 def invites_for_request(request_id):
     return jsonify([admin_invite_json(i) for i in guarded_feedback().invites_for_request(request_id)])
+
+
+@blueprint.post("/admin/requests/<int:request_id>/verdict")
+def resend_verdict(request_id):
+    feedback = guarded_feedback()
+    pending = feedback.pending_verdict(request_id)
+    # The outcome is in each invite's verdict_pending, so the page shows the
+    # same notice whether the first try or this resend failed.
+    if pending is not None:
+        current_app.extensions["avdesk"].verdicts.send(pending)
+    return jsonify([admin_invite_json(i) for i in feedback.invites_for_request(request_id)])
 
 
 @blueprint.get("/admin/metrics")

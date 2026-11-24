@@ -36,6 +36,12 @@ class FeedbackFacade:
         self._ttl_days = ttl_days
 
     def create_invites(self, work: DeliveredWork, recipients: list[Recipient]) -> list[FeedbackInvite]:
+        # The requests service retries when it did not hear back, so the same
+        # delivery may arrive twice; a redelivery after changes has a new
+        # delivered_at and gets fresh invites.
+        existing = self._reader.invites_for_delivery(work.request_id, work.delivered_at)
+        if existing:
+            return existing
         now = self._clock.now()
         expires_at = invite_expiry(now, self._ttl_days)
         new_invites = [NewInvite(self._tokens.new_token(), r.label, r.is_requester, expires_at) for r in recipients]
@@ -56,9 +62,15 @@ class FeedbackFacade:
             response = self._writer.record_response(invite, answer, self._clock.now())
         except InviteAlreadyUsed:
             return SubmissionOutcome(InviteState.USED, {})
-        self._events.notify(ResponseReceived(invite.work.request_id, invite.work.public_code, answer.outcome,
+        self._events.notify(ResponseReceived(invite.id, invite.work.request_id, invite.work.public_code, answer.outcome,
                                              invite.is_requester))
         return SubmissionOutcome(InviteState.USED, {}, response)
+
+    def pending_verdict(self, request_id: int) -> ResponseReceived | None:
+        return self._reader.pending_verdict(request_id)
+
+    def mark_verdict_pending(self, invite_id: int, pending: bool) -> None:
+        self._writer.set_verdict_pending(invite_id, pending)
 
     def invites_for_request(self, request_id: int) -> list[FeedbackInvite]:
         return self._reader.invites_for_request(request_id)

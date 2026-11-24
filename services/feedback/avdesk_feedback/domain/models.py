@@ -58,6 +58,7 @@ class FeedbackInvite:
     expires_at: datetime
     used_at: datetime | None
     created_at: datetime
+    verdict_pending: bool = False
 
 
 @dataclass(frozen=True)
@@ -79,6 +80,7 @@ class FeedbackResponse:
 @dataclass(frozen=True)
 class ResponseReceived:
     """Event published after a response is stored; what the requests side may learn."""
+    invite_id: int
     request_id: int
     public_code: str
     outcome: Outcome

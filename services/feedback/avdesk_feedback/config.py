@@ -29,6 +29,7 @@ class Config:
     feedback_ttl_days: int
     admin_token_secret: str
     cors_origin: str
+    requests_url: str
 
     @classmethod
     def from_env(cls, env: Mapping[str, str]) -> "Config":
@@ -44,6 +45,7 @@ class Config:
             feedback_ttl_days=int(env.get("FEEDBACK_TTL_DAYS", "30")),
             admin_token_secret=env["ADMIN_TOKEN_SECRET"],
             cors_origin=env.get("CORS_ORIGIN", LOCAL_UI_ORIGIN),
+            requests_url=env.get("REQUESTS_URL", ""),
         )
 
 

@@ -31,7 +31,8 @@ def public_invite_json(invite: FeedbackInvite | None, state: InviteState) -> dic
 
 def admin_invite_json(invite: FeedbackInvite) -> dict[str, Any]:
     return {"token": invite.token, "recipient_label": invite.recipient_label, "is_requester": invite.is_requester,
-            "expires_at": iso(invite.expires_at), "used_at": iso(invite.used_at)}
+            "expires_at": iso(invite.expires_at), "used_at": iso(invite.used_at),
+            "verdict_pending": invite.verdict_pending}
 
 
 def metrics_json(metrics: FeedbackMetrics) -> dict[str, Any]:

@@ -45,7 +45,8 @@ def create_web_app(health_probe: HealthProbe, version: str, cors_origin: str = "
     return app
 
 
-def register_api(app: Flask, services, admin_tokens: AdminTokens) -> None:
+def register_api(app: Flask, services, admin_tokens: AdminTokens, service_tokens: AdminTokens) -> None:
     app.extensions["avdesk"] = services
     app.extensions["avdesk_admin_tokens"] = admin_tokens
+    app.extensions["avdesk_service_tokens"] = service_tokens
     app.register_blueprint(api.blueprint)
