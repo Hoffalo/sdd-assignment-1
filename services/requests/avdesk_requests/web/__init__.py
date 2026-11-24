@@ -1,18 +1,20 @@
-"""HTTP glue of the requests service: turns requests into facade calls and back.
+"""HTTP glue of the requests service: turns JSON requests into facade calls and back.
 
 Assembled here from already-built collaborators, so tests can create the
 Flask app with stubs and no database; choosing concrete classes is the
-composition root's job.
+composition root's job. The service only speaks JSON: the pages live in ui/.
 """
 from flask import Flask, jsonify
 
 from avdesk_requests.health import HealthProbe
-from avdesk_requests.web import request_log
+from avdesk_requests.web import admin_api, cors, public_api, request_log
+from avdesk_requests.web.admin_guard import AdminTokens
 
 
-def create_web_app(health_probe: HealthProbe, version: str) -> Flask:
+def create_web_app(health_probe: HealthProbe, version: str, cors_origin: str = "") -> Flask:
     app = Flask(__name__)
     request_log.install(app)
+    cors.install(app, cors_origin)
 
     @app.get("/health")
     def health():
@@ -20,4 +22,24 @@ def create_web_app(health_probe: HealthProbe, version: str) -> Flask:
             return jsonify(status="ok", db="ok", version=version), 200
         return jsonify(status="unavailable", db="unavailable", version=version), 503
 
+    @app.errorhandler(404)
+    def not_found(_error):
+        return jsonify(error="Not found"), 404
+
+    @app.errorhandler(405)
+    def method_not_allowed(_error):
+        return jsonify(error="Method not allowed"), 405
+
+    @app.errorhandler(500)
+    def server_error(_error):
+        # The traceback goes to the log (Flask logs it); the caller gets JSON, never HTML.
+        return jsonify(error="Erro interno. Tente de novo em instantes."), 500
+
     return app
+
+
+def register_api(app: Flask, services, admin_tokens: AdminTokens) -> None:
+    app.extensions["avdesk"] = services
+    app.extensions["avdesk_admin_tokens"] = admin_tokens
+    app.register_blueprint(public_api.blueprint)
+    app.register_blueprint(admin_api.blueprint)

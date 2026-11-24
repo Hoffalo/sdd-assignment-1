@@ -24,7 +24,8 @@ from avdesk_requests.seeding import load_reference_data, load_seed
 from avdesk_requests.task_observer import TaskTrackerObserver
 from avdesk_requests.task_tracker import ClickUpTaskTracker, DisabledTaskTracker, TaskTracker
 from avdesk_requests.tokens import SecureTokenGenerator, TokenGenerator
-from avdesk_requests.web import create_web_app
+from avdesk_requests.web import create_web_app, register_api
+from avdesk_requests.web.admin_guard import AdminTokens
 
 # /health must answer in seconds, so it tries the database once; the boot
 # uses the default policy and waits out a paused serverless database.
@@ -79,7 +80,8 @@ def create_app(config: Config, clock: Clock | None = None, tokens: TokenGenerato
     prepare_database(database)
 
     health_probe = DatabaseHealthProbe(database.with_retry(HEALTH_RETRY))
-    app = create_web_app(health_probe, config.version)
-    app.extensions["avdesk"] = build_services(config, database, clock or SystemClock(),
-                                              tokens or SecureTokenGenerator(), tracker or build_task_tracker(config))
+    app = create_web_app(health_probe, config.version, config.cors_origin)
+    services = build_services(config, database, clock or SystemClock(), tokens or SecureTokenGenerator(),
+                              tracker or build_task_tracker(config))
+    register_api(app, services, AdminTokens(config.admin_token_secret, config.admin_token_ttl_s))
     return app
