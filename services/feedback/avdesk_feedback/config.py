@@ -12,6 +12,9 @@ from typing import Mapping
 from avdesk_feedback.database import DatabaseUrl
 
 UNKNOWN_VERSION = "dev"
+# Where `docker compose` serves the UI; the deployed UI origin is set by the pipeline.
+LOCAL_UI_ORIGIN = "http://localhost:8080"
+SECRETS = ("DATABASE_URL", "ADMIN_TOKEN_SECRET")
 
 
 class MissingSetting(Exception):
@@ -24,18 +27,23 @@ class Config:
     database_url: DatabaseUrl
     version: str
     feedback_ttl_days: int
+    admin_token_secret: str
+    cors_origin: str
 
     @classmethod
     def from_env(cls, env: Mapping[str, str]) -> "Config":
-        # A secret with no default: running against some other database would
-        # be worse than refusing to start.
-        if not env.get("DATABASE_URL"):
-            raise MissingSetting("DATABASE_URL is not set")
+        # Secrets have no default: running against some other database, or
+        # accepting tokens signed with a known key, is worse than not starting.
+        missing = [name for name in SECRETS if not env.get(name)]
+        if missing:
+            raise MissingSetting(f"Not set: {', '.join(missing)}")
         return cls(
             port=int(env.get("PORT", "8000")),
             database_url=DatabaseUrl.parse(env["DATABASE_URL"]),
             version=env.get("GIT_SHA") or UNKNOWN_VERSION,
             feedback_ttl_days=int(env.get("FEEDBACK_TTL_DAYS", "30")),
+            admin_token_secret=env["ADMIN_TOKEN_SECRET"],
+            cors_origin=env.get("CORS_ORIGIN", LOCAL_UI_ORIGIN),
         )
 
 
