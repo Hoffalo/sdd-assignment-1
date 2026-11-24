@@ -1,0 +1,657 @@
+openapi: 3.0.3
+info:
+  title: AV Desk requests service
+  version: "2.0.0"
+  description: |
+    Video requests from intake to delivery: the briefing form's catalog, the
+    lead-time check, submission, the requester's tracking page and the AV
+    manager's inbox, actions and metrics.
+
+    Admin endpoints take `Authorization: Bearer <token>` from `POST /admin/session`.
+    `POST /requests/{id}/verdict` is called only by the feedback service, with a
+    service token signed by the shared ADMIN_TOKEN_SECRET (claim `avdesk_service`).
+    Every answer carries `Cache-Control: no-store`.
+servers:
+  - url: http://localhost:8001
+    description: docker compose
+tags:
+  - name: health
+  - name: requester
+  - name: admin
+  - name: service
+    description: Called by the feedback service across the seam.
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Whether this service can read and write its own database
+      responses:
+        "200":
+          description: Database reachable and writable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+        "503":
+          description: Database unavailable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+
+  /catalog:
+    get:
+      tags: [requester]
+      summary: Request types, briefing questions, diretorias, analysts and status labels
+      responses:
+        "200":
+          description: The catalog the briefing form is built from
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Catalog" }
+
+  /deadline:
+    get:
+      tags: [requester]
+      summary: Lead-time check for a date, with the same rule as submission
+      parameters:
+        - { name: type_code, in: query, required: true, schema: { type: string } }
+        - { name: needed_by, in: query, required: true, schema: { type: string, format: date } }
+        - { name: needs_c_level_approval, in: query, required: false, schema: { type: string, enum: ["true", "false"] } }
+      responses:
+        "200":
+          description: Whether the date is a rush, and the earliest comfortable date
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Assessment" }
+        "400":
+          description: type_code or needed_by missing or invalid
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /requests:
+    post:
+      tags: [requester]
+      summary: Submit a new video request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BriefingInput" }
+      responses:
+        "201":
+          description: Created; the tracking token is the requester's private link
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tracking_token, public_code]
+                properties:
+                  tracking_token: { type: string }
+                  public_code: { type: string, example: AV-2026-0001 }
+        "422":
+          description: Field errors, keyed by field or question key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FieldErrors" }
+
+  /requests/by-token/{token}:
+    parameters:
+      - { name: token, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [requester]
+      summary: The requester's tracking view
+      responses:
+        "200":
+          description: Status, briefing (without e-mail) and public timeline
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tracking" }
+        "404":
+          description: Unknown token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /requests/by-token/{token}/briefing:
+    parameters:
+      - { name: token, in: path, required: true, schema: { type: string } }
+    put:
+      tags: [requester]
+      summary: Resubmit the briefing after the AV manager asked for information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BriefingInput" }
+      responses:
+        "200":
+          description: Updated and back in the inbox
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tracking" }
+        "404":
+          description: Unknown token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: The request is not waiting for information
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "422":
+          description: Field errors
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FieldErrors" }
+
+  /requests/{request_id}/verdict:
+    parameters:
+      - { name: request_id, in: path, required: true, schema: { type: integer } }
+    post:
+      tags: [service]
+      summary: The requester's verdict on the delivery, sent by the feedback service
+      description: |
+        A delivered request is closed (approved, minor_tweaks) or reopened
+        (major_changes). Any other status is left alone, so resending is harmless.
+      security: [{ serviceToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VerdictInput" }
+      responses:
+        "200":
+          description: The request's status after the verdict
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VerdictResult" }
+        "401":
+          description: Missing, invalid or non-service token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: Unknown request
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: The request changed status at the same moment; send again
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "422":
+          description: Unknown verdict
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FieldError" }
+
+  /admin/session:
+    post:
+      tags: [admin]
+      summary: Log in as the AV manager
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password: { type: string }
+      responses:
+        "201":
+          description: A signed bearer token
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, expires_in]
+                properties:
+                  token: { type: string }
+                  expires_in: { type: integer, description: Seconds }
+        "401":
+          description: Wrong password
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /admin/requests:
+    get:
+      tags: [admin]
+      summary: The inbox, optionally filtered
+      security: [{ adminToken: [] }]
+      parameters:
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/Status" } }
+        - { name: type_code, in: query, schema: { type: string } }
+        - { name: diretoria_id, in: query, schema: { type: integer } }
+        - { name: analyst_id, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: One row per request
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RequestSummary" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /admin/workload:
+    get:
+      tags: [admin]
+      summary: Open requests per analyst, and the high-load threshold
+      security: [{ adminToken: [] }]
+      responses:
+        "200":
+          description: Workload
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [threshold, analysts]
+                properties:
+                  threshold: { type: integer }
+                  analysts:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, name, open]
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+                        open: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /admin/requests/{request_id}:
+    parameters:
+      - { name: request_id, in: path, required: true, schema: { type: integer } }
+    get:
+      tags: [admin]
+      summary: Everything about one request
+      security: [{ adminToken: [] }]
+      responses:
+        "200":
+          description: Detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RequestDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /admin/requests/{request_id}/actions:
+    parameters:
+      - { name: request_id, in: path, required: true, schema: { type: integer } }
+    post:
+      tags: [admin]
+      summary: Move the request (accept, request_info, decline, start_production, send_to_review, deliver, close, reopen, cancel)
+      description: Delivering also asks the feedback service for invites; if it cannot answer, `invites_pending` is true.
+      security: [{ adminToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string }
+                note: { type: string }
+                analyst_id: { type: integer }
+                review_url: { type: string }
+                delivery_url: { type: string }
+      responses:
+        "200":
+          description: The request after the action
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RequestDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: The action is not allowed now, or the request changed meanwhile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "422":
+          description: A required input is missing
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FieldError" }
+
+  /admin/requests/{request_id}/undo:
+    parameters:
+      - { name: request_id, in: path, required: true, schema: { type: integer } }
+    post:
+      tags: [admin]
+      summary: Undo the last reversible status change
+      security: [{ adminToken: [] }]
+      responses:
+        "200":
+          description: The request after the undo
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RequestDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Nothing can be undone
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /admin/requests/{request_id}/invites:
+    parameters:
+      - { name: request_id, in: path, required: true, schema: { type: integer } }
+    post:
+      tags: [admin]
+      summary: Ask the feedback service again for the invites of a delivered request
+      description: The result is in `invites_pending` of the returned detail.
+      security: [{ adminToken: [] }]
+      responses:
+        "200":
+          description: The request after the attempt
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RequestDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: The request was never delivered
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /admin/metrics:
+    get:
+      tags: [admin]
+      summary: Request-side metrics (the UI joins them with the feedback service's)
+      security: [{ adminToken: [] }]
+      responses:
+        "200":
+          description: Metrics
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RequestMetrics" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+components:
+  securitySchemes:
+    adminToken:
+      type: http
+      scheme: bearer
+      description: From POST /admin/session (claim av_manager), valid 12 hours by default.
+    serviceToken:
+      type: http
+      scheme: bearer
+      description: Issued per call by the feedback service (claim avdesk_service), valid 5 minutes.
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid admin token
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Unknown request
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Health:
+      type: object
+      required: [status, db, version]
+      properties:
+        status: { type: string, enum: [ok, unavailable] }
+        db: { type: string, enum: [ok, unavailable] }
+        version: { type: string, description: Git commit SHA of the image }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+
+    FieldError:
+      type: object
+      required: [error, field]
+      properties:
+        error: { type: string }
+        field: { type: string }
+
+    FieldErrors:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: object
+          additionalProperties: { type: string }
+
+    Status:
+      type: string
+      enum: [submitted, needs_info, accepted, declined, in_production, in_review, delivered, closed, cancelled]
+
+    Answers:
+      type: object
+      description: Briefing answers keyed by question key; text, or a list for multiple-choice questions.
+      additionalProperties:
+        oneOf:
+          - type: string
+          - type: array
+            items: { type: string }
+
+    BriefingInput:
+      type: object
+      properties:
+        requester_name: { type: string }
+        requester_email: { type: string }
+        diretoria_id: { type: integer }
+        type_code: { type: string }
+        type_detail: { type: string }
+        title: { type: string }
+        campaign: { type: string }
+        needs_c_level_approval: { type: boolean }
+        needed_by: { type: string, format: date }
+        needed_by_reason: { type: string }
+        rush_reason: { type: string }
+        answers: { $ref: "#/components/schemas/Answers" }
+
+    Briefing:
+      type: object
+      required: [requester_name, diretoria_id, type_code, title, needed_by, answers]
+      properties:
+        requester_name: { type: string }
+        requester_email: { type: string, description: Only in the admin views }
+        diretoria_id: { type: integer, nullable: true }
+        type_code: { type: string }
+        type_detail: { type: string }
+        title: { type: string }
+        campaign: { type: string }
+        needs_c_level_approval: { type: boolean }
+        needed_by: { type: string, format: date, nullable: true }
+        needed_by_reason: { type: string }
+        rush_reason: { type: string }
+        answers: { $ref: "#/components/schemas/Answers" }
+
+    Catalog:
+      type: object
+      required: [types, questions, diretorias, analysts, statuses]
+      properties:
+        types:
+          type: array
+          items:
+            type: object
+            required: [code, label, min_lead_days]
+            properties:
+              code: { type: string }
+              label: { type: string }
+              min_lead_days: { type: integer }
+              detail_label: { type: string, nullable: true }
+        questions:
+          type: array
+          items:
+            type: object
+            required: [key, section, label, kind, options, required, position]
+            properties:
+              key: { type: string }
+              type_code: { type: string, nullable: true }
+              section: { type: string }
+              label: { type: string }
+              help: { type: string, nullable: true }
+              kind: { type: string }
+              options: { type: array, items: { type: string } }
+              required: { type: boolean }
+              position: { type: integer }
+              depends_on: { type: string, nullable: true }
+              depends_value: { type: string, nullable: true }
+        diretorias:
+          type: array
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id: { type: integer }
+              name: { type: string }
+        analysts:
+          type: array
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id: { type: integer }
+              name: { type: string }
+        statuses:
+          type: array
+          items:
+            type: object
+            required: [value, label]
+            properties:
+              value: { $ref: "#/components/schemas/Status" }
+              label: { type: string }
+
+    Assessment:
+      type: object
+      required: [rush, available_days, required_days]
+      properties:
+        rush: { type: boolean }
+        available_days: { type: integer }
+        required_days: { type: integer }
+        earliest_date: { type: string, format: date, nullable: true }
+        work_deadline: { type: string, format: date, nullable: true }
+
+    StatusFields:
+      type: object
+      required: [public_code, status, status_label, rush]
+      properties:
+        public_code: { type: string }
+        status: { $ref: "#/components/schemas/Status" }
+        status_label: { type: string }
+        rush: { type: boolean }
+        analyst_id: { type: integer, nullable: true }
+        review_url: { type: string, nullable: true }
+        delivery_url: { type: string, nullable: true }
+
+    TimelineEvent:
+      type: object
+      required: [to_status, to_status_label, note, created_at]
+      properties:
+        to_status: { $ref: "#/components/schemas/Status" }
+        to_status_label: { type: string }
+        note: { type: string }
+        created_at: { type: string, format: date-time }
+        actor: { type: string, description: Only in the admin view }
+
+    Tracking:
+      allOf:
+        - $ref: "#/components/schemas/StatusFields"
+        - type: object
+          required: [briefing, editable, timeline]
+          properties:
+            briefing: { $ref: "#/components/schemas/Briefing" }
+            editable: { type: boolean, description: True while the AV manager is waiting for information }
+            timeline:
+              type: array
+              items: { $ref: "#/components/schemas/TimelineEvent" }
+
+    RequestSummary:
+      allOf:
+        - $ref: "#/components/schemas/StatusFields"
+        - type: object
+          required: [id, title, type_code, briefing_score]
+          properties:
+            id: { type: integer }
+            title: { type: string }
+            type_code: { type: string }
+            diretoria_id: { type: integer, nullable: true }
+            needed_by: { type: string, format: date, nullable: true }
+            briefing_score: { type: integer }
+
+    RequestDetail:
+      allOf:
+        - $ref: "#/components/schemas/StatusFields"
+        - type: object
+          required: [id, tracking_token, briefing_score, invites_pending, briefing, actions, can_undo,
+                     briefing_markdown, slack_message, timeline]
+          properties:
+            id: { type: integer }
+            tracking_token: { type: string }
+            briefing_score: { type: integer }
+            task_url: { type: string, nullable: true }
+            invites_pending: { type: boolean, description: Delivered, but the feedback service has not created the invites yet }
+            accepted_at: { type: string, format: date-time, nullable: true }
+            delivered_at: { type: string, format: date-time, nullable: true }
+            created_at: { type: string, format: date-time }
+            briefing: { $ref: "#/components/schemas/Briefing" }
+            actions:
+              type: array
+              items:
+                type: object
+                required: [name, label]
+                properties:
+                  name: { type: string }
+                  label: { type: string }
+            can_undo: { type: boolean }
+            briefing_markdown: { type: string }
+            slack_message: { type: string }
+            timeline:
+              type: array
+              items: { $ref: "#/components/schemas/TimelineEvent" }
+
+    RequestMetrics:
+      type: object
+      required: [total_requests, by_status, briefing_scores]
+      properties:
+        total_requests: { type: integer }
+        by_status:
+          type: array
+          items:
+            type: object
+            required: [status, label, count]
+            properties:
+              status: { $ref: "#/components/schemas/Status" }
+              label: { type: string }
+              count: { type: integer }
+        rush_share: { type: number, nullable: true }
+        on_time_rate: { type: number, nullable: true }
+        median_turnaround_by_type:
+          type: object
+          additionalProperties: { type: number }
+        average_score: { type: number, nullable: true }
+        briefing_scores:
+          type: object
+          description: Briefing score per request id, for the UI to join with feedback outcomes
+          additionalProperties: { type: integer }
+
+    VerdictInput:
+      type: object
+      required: [verdict]
+      properties:
+        verdict: { type: string, enum: [approved, minor_tweaks, major_changes] }
+
+    VerdictResult:
+      type: object
+      required: [status]
+      properties:
+        status: { $ref: "#/components/schemas/Status" }
