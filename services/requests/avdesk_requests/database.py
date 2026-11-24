@@ -1,130 +1,146 @@
-"""SQLite access shared by both domains: connections, schema, migrations, reference data.
+"""SQL Server access for the requests service: connection string, retries, units of work.
 
-Startup is idempotent by design (assignment §7.11): tables are created only
-if missing, migrations run once each, and reference data is loaded without
-ever duplicating rows, so a restart never duplicates or wipes what users entered.
+Adapter over pymssql, chosen because it installs from a wheel with no system
+ODBC driver, which keeps the image slim (ADR-7). Nothing outside the
+repositories, the migration runner and seeding touches SQL.
 """
-import json
-import sqlite3
+import logging
+import time
 from contextlib import contextmanager
-from pathlib import Path
-from typing import Any, Iterator
+from dataclasses import dataclass, replace
+from datetime import datetime, timezone
+from typing import Any, Callable, Iterator, Sequence
+from urllib.parse import unquote, urlsplit
 
-PACKAGE_DIR = Path(__file__).resolve().parent
-SCHEMA_FILES = (
-    PACKAGE_DIR / "requests_domain" / "schema.sql",
-    PACKAGE_DIR / "feedback_domain" / "schema.sql",
-)
-SEED_FILE = PACKAGE_DIR.parent / "seed.json"
+import pymssql
 
-# Append-only. schema.sql always describes the latest shape, so a new database
-# is stamped at len(MIGRATIONS); an older one replays only the steps it lacks.
-# The step number is kept in SQLite's own PRAGMA user_version.
-MIGRATIONS = (
-    "ALTER TABLE briefing_questions ADD COLUMN depends_on TEXT",
-    "ALTER TABLE briefing_questions ADD COLUMN depends_value TEXT",
-    "ALTER TABLE requests ADD COLUMN review_url TEXT",
-    "ALTER TABLE request_types RENAME COLUMN min_lead_business_days TO min_lead_days",
-    "ALTER TABLE requests RENAME COLUMN for_conference TO needs_c_level_approval",
-)
+log = logging.getLogger(__name__)
 
-# The briefing catalog is configuration owned by seed.json, so it follows the
-# file on every boot: rows are matched by their natural key and updated.
-# Questions missing from the file are removed (nothing references them);
-# request types are never removed because requests point at them.
-# Diretorias and analysts are not listed: requests point at them by id, so
-# they are seeded once into empty tables and never rewritten.
-SYNCED_TABLES = {
-    "request_types": ("code", False),
-    "briefing_questions": ("key", True),
-}
+URL_SCHEME = "mssql"
+SQL_SERVER_PORT = 1433
+# A login that cannot complete in 10 s will not complete at all; failing fast
+# lets the retry policy decide whether to try again.
+LOGIN_TIMEOUT_S = 10
+QUERY_TIMEOUT_S = 30
+# pymssql reports a paused serverless database (40613), a refused socket and a
+# login timeout all as OperationalError, so these are the errors worth waiting out.
+TRANSIENT_ERRORS = (pymssql.OperationalError, pymssql.InterfaceError)
+
+
+class DatabaseUnavailable(Exception):
+    """The database did not accept a connection within the retry budget."""
+
+
+@dataclass(frozen=True)
+class DatabaseUrl:
+    """DATABASE_URL as a value: mssql://user:password@host:port/database."""
+
+    host: str
+    port: int
+    user: str
+    password: str
+    database: str
+
+    @classmethod
+    def parse(cls, raw: str) -> "DatabaseUrl":
+        parts = urlsplit(raw)
+        name = parts.path.lstrip("/")
+        if parts.scheme != URL_SCHEME or not (parts.hostname and parts.username and parts.password and name):
+            raise ValueError("DATABASE_URL must look like mssql://user:password@host:port/database")
+        return cls(parts.hostname, parts.port or SQL_SERVER_PORT, unquote(parts.username),
+                   unquote(parts.password), unquote(name))
+
+    def with_database(self, name: str) -> "DatabaseUrl":
+        return replace(self, database=name)
+
+    def __repr__(self) -> str:
+        # Connection strings end up in logs and tracebacks; the password must not.
+        return f"DatabaseUrl({self.user}@{self.host}:{self.port}/{self.database})"
+
+
+@dataclass(frozen=True)
+class RetryPolicy:
+    """Exponential backoff, capped. The defaults wait about 70 s in total,
+    longer than the minute a paused Azure SQL serverless database needs to resume."""
+
+    attempts: int = 8
+    first_delay_s: float = 1
+    max_delay_s: float = 15
+
+    def delays(self) -> list[float]:
+        return [min(self.first_delay_s * 2 ** i, self.max_delay_s) for i in range(self.attempts - 1)]
+
+
+class Session:
+    """One open connection inside a unit of work, returning rows as dicts."""
+
+    def __init__(self, connection):
+        self._connection = connection
+
+    def execute(self, sql: str, params: Sequence[Any] = ()):
+        cursor = self._connection.cursor(as_dict=True)
+        # None, not an empty tuple: pymssql only expands %s placeholders when
+        # parameters are given, so a literal % in parameterless SQL stays literal.
+        cursor.execute(sql, tuple(params) if params else None)
+        return cursor
 
 
 class Database:
     """Hands out one connection per unit of work.
 
-    Deliberately not a Singleton: waitress runs requests on several threads
-    and a sqlite3 connection must not be shared between them.
+    Deliberately not a Singleton: waitress serves requests on several threads
+    and a pymssql connection must not be shared between them.
     """
 
-    def __init__(self, path: Path):
-        self.path = Path(path)
+    def __init__(self, url: DatabaseUrl, connect: Callable[..., Any] = pymssql.connect,
+                 retry: RetryPolicy = RetryPolicy(), sleep: Callable[[float], None] = time.sleep,
+                 autocommit: bool = False):
+        self.url = url
+        self._connect = connect
+        self._retry = retry
+        self._sleep = sleep
+        self._autocommit = autocommit
+
+    def with_retry(self, retry: RetryPolicy) -> "Database":
+        return Database(self.url, self._connect, retry, self._sleep, self._autocommit)
+
+    def _open(self):
+        delays = self._retry.delays()
+        for attempt in range(self._retry.attempts):
+            try:
+                return self._connect(server=self.url.host, port=self.url.port, user=self.url.user,
+                                     password=self.url.password, database=self.url.database,
+                                     login_timeout=LOGIN_TIMEOUT_S, timeout=QUERY_TIMEOUT_S,
+                                     autocommit=self._autocommit)
+            except TRANSIENT_ERRORS as error:
+                if attempt == len(delays):
+                    raise DatabaseUnavailable(f"{self.url!r} did not answer after {self._retry.attempts} attempts") \
+                        from error
+                log.warning("Database %r not reachable (attempt %d/%d), retrying in %ss: %s",
+                            self.url, attempt + 1, self._retry.attempts, delays[attempt], error)
+                self._sleep(delays[attempt])
+        raise DatabaseUnavailable(f"{self.url!r}: retry policy allows no attempts")
 
     @contextmanager
-    def connect(self) -> Iterator[sqlite3.Connection]:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(self.path)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
+    def connect(self) -> Iterator[Session]:
+        connection = self._open()
         try:
-            yield conn
-            conn.commit()
+            yield Session(connection)
+            connection.commit()
         except BaseException:
-            conn.rollback()
+            connection.rollback()
             raise
         finally:
-            conn.close()
+            connection.close()
 
 
-def _table_names(conn: sqlite3.Connection) -> set[str]:
-    return {row["name"] for row in conn.execute(
-        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")}
+# Every timestamp is stored as UTC in a DATETIME2 column, which has no offset,
+# so the offset is dropped on the way in and restored on the way out. One
+# rule in one place keeps every timestamp comparable whatever zone wrote it.
+
+def to_db_time(value: datetime | None) -> datetime | None:
+    return value.astimezone(timezone.utc).replace(tzinfo=None) if value else None
 
 
-def create_schema(database: Database, schema_files=SCHEMA_FILES, migrations=MIGRATIONS) -> None:
-    with database.connect() as conn:
-        is_new = not _table_names(conn)
-        for schema in schema_files:
-            conn.executescript(Path(schema).read_text(encoding="utf-8"))
-        version = len(migrations) if is_new else conn.execute("PRAGMA user_version").fetchone()[0]
-        for step in migrations[version:]:
-            conn.execute(step)
-        # PRAGMA values cannot be bound as parameters; this is an int we computed.
-        conn.execute(f"PRAGMA user_version = {len(migrations)}")
-
-
-def load_seed(path: Path = SEED_FILE) -> dict[str, list[dict[str, Any]]]:
-    data = json.loads(Path(path).read_text(encoding="utf-8"))
-    return {table: rows for table, rows in data.items() if not table.startswith("_")}
-
-
-def _values(row: dict[str, Any]) -> list[Any]:
-    return [json.dumps(v, ensure_ascii=False) if isinstance(v, (list, dict)) else v for v in row.values()]
-
-
-def _insert(conn: sqlite3.Connection, table: str, row: dict[str, Any], upsert_key: str | None = None) -> None:
-    columns = ", ".join(f'"{c}"' for c in row)
-    placeholders = ", ".join("?" for _ in row)
-    statement = f'INSERT INTO "{table}" ({columns}) VALUES ({placeholders})'
-    if upsert_key:
-        updates = ", ".join(f'"{c}" = excluded."{c}"' for c in row if c != upsert_key)
-        statement += f' ON CONFLICT ("{upsert_key}") DO UPDATE SET {updates}'
-    conn.execute(statement, _values(row))
-
-
-def _sync(conn: sqlite3.Connection, table: str, rows: list[dict[str, Any]], key: str, prune: bool) -> None:
-    table_columns = {row["name"] for row in conn.execute(f'PRAGMA table_info("{table}")')}
-    for row in rows:
-        # A synced row overwrites the stored one, so a missing column would
-        # silently keep a stale value; every column must be stated.
-        if set(row) != table_columns:
-            raise ValueError(f"seed.json row {row.get(key)!r} in {table} must list exactly {sorted(table_columns)}")
-        _insert(conn, table, row, upsert_key=key)
-    if prune:
-        keys = [row[key] for row in rows]
-        conn.execute(f'DELETE FROM "{table}" WHERE "{key}" NOT IN ({", ".join("?" for _ in keys)})', keys)
-
-
-def load_reference_data(database: Database, seed: dict[str, list[dict[str, Any]]]) -> None:
-    with database.connect() as conn:
-        existing = _table_names(conn)
-        for table, rows in seed.items():
-            # Table names cannot be bound as SQL parameters, so only names that
-            # already exist in the schema are allowed into the statement.
-            if table not in existing:
-                raise ValueError(f"seed.json names unknown table {table!r}")
-            if table in SYNCED_TABLES:
-                _sync(conn, table, rows, *SYNCED_TABLES[table])
-            elif not conn.execute(f'SELECT 1 FROM "{table}" LIMIT 1').fetchone():
-                for row in rows:
-                    _insert(conn, table, row)
+def from_db_time(value: datetime | None) -> datetime | None:
+    return value.replace(tzinfo=timezone.utc) if value else None
