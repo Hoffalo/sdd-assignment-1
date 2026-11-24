@@ -2,7 +2,7 @@ from datetime import date, datetime, timezone
 
 import pytest
 
-from avdesk.composition import build_feedback_domain
+from avdesk_feedback.composition import build_feedback_domain
 from avdesk_feedback.domain.events import FeedbackObserver
 from avdesk_feedback.domain.facade import Recipient
 from avdesk_feedback.domain.models import DeliveredWork, InviteState, Outcome
