@@ -51,6 +51,40 @@ function actionForm(action, catalog, workload) {
   return ONE_CLICK.has(action.name) ? form : h("details", { class: "action" }, h("summary", {}, action.label), form);
 }
 
+function retryButton(label, onClick) {
+  const button = h("button", { type: "button", class: "button-secondary" }, label);
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+// Delivery stands even when the feedback service missed it; the manager
+// creates the links once it is back, and a retry never duplicates them.
+function pendingInvitesNotice(detail) {
+  if (!detail.invites_pending) return null;
+  return h("div", { class: "notice notice-error" },
+    h("p", {}, "Os links de avaliação ainda não foram criados: o serviço de avaliação não respondeu na entrega."),
+    retryButton("Criar links agora", async () => {
+      const updated = await requestsApi.post(`/admin/requests/${requestId}/invites`, {}, adminCall);
+      await rerender(updated, updated.invites_pending ? null : "Links de avaliação criados.");
+      if (updated.invites_pending) flash("O serviço de avaliação ainda não respondeu. Tente de novo em instantes.", "error");
+    }));
+}
+
+// The requester's answer is stored even if this service missed the verdict;
+// resending applies it, and the request service ignores a repeat.
+function pendingVerdictNotice(invites) {
+  if (!invites.some((invite) => invite.verdict_pending)) return null;
+  return h("div", { class: "notice notice-error" },
+    h("p", {}, "Quem pediu já respondeu a avaliação, mas o veredito ainda não chegou a este pedido."),
+    retryButton("Reenviar veredito", async () => {
+      const after = await feedbackApi.post(`/admin/requests/${requestId}/verdict`, {}, adminCall);
+      const updated = await requestsApi.get(`/admin/requests/${requestId}`, adminCall);
+      const stillPending = after.some((invite) => invite.verdict_pending);
+      await rerender(updated, stillPending ? null : "Veredito aplicado.");
+      if (stillPending) flash("O pedido ainda não recebeu o veredito. Tente de novo em instantes.", "error");
+    }));
+}
+
 // The feedback service owns the invites; if it is down, only this section
 // says so and the rest of the page keeps working.
 function invitesSection(invites, detail) {
@@ -58,7 +92,7 @@ function invitesSection(invites, detail) {
     return h("p", { class: "notice notice-error" }, "As avaliações estão indisponíveis no momento (serviço de avaliação fora do ar). Tente de novo mais tarde.");
   }
   if (!invites.length) return null;
-  return [h("h3", {}, "Links de avaliação"), h("ul", {}, invites.map((invite) => {
+  return [h("h3", {}, "Links de avaliação"), pendingVerdictNotice(invites), h("ul", {}, invites.map((invite) => {
     const url = `${link("avaliacao.html")}#t=${encodeURIComponent(invite.token)}`;
     const mail = `mailto:${detail.briefing.requester_email}?subject=${encodeURIComponent(`Avalie o vídeo ${detail.public_code}`)}` +
       `&body=${encodeURIComponent(`Oi! O vídeo ficou pronto. Conta pra gente como foi: ${url}`)}`;
@@ -104,6 +138,7 @@ function render(detail, catalog, workload, invites) {
     h("section", { class: "card" }, h("h3", {}, "Comunicação"),
       h("p", {}, "Link de acompanhamento para quem pediu: ", h("a", { href: trackingUrl }, trackingUrl)),
       h("p", {}, copyButton("Copiar mensagem para o Slack", detail.slack_message)),
+      pendingInvitesNotice(detail),
       invitesSection(invites, detail)),
     h("section", { class: "card" }, h("h3", {}, "Briefing"),
       h("details", {}, h("summary", {}, "Ver como Markdown"), h("pre", { class: "copyable" }, detail.briefing_markdown),
