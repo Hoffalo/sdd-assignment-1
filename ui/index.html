@@ -1,22 +1,14 @@
-{% extends "base.html" %}
-{% block content %}
-<section class="hero">
-  <h1>Pedidos de audiovisual da BRASA</h1>
-  <p>Precisa de um vídeo? Conte pra gente o que você imagina. Um bom briefing é o caminho mais curto para um vídeo que acerta de primeira.</p>
-</section>
-
-<section class="gate">
-  <h2>O que você precisa?</h2>
-  <div class="gate-options">
-    <article class="card">
-      <h3>Um vídeo</h3>
-      <p>Teaser, vídeo institucional, vídeo para redes sociais fora do calendário editorial ou outro formato.</p>
-      <a class="button" href="{{ url_for('public.new_request') }}">Começar o briefing</a>
-    </article>
-    <article class="card card-muted">
-      <h3>Um post regular do calendário editorial</h3>
-      <p>Posts de feed, stories, reels e TikToks do calendário seguem o fluxo de briefing da Comunicação no ClickUp. Esses pedidos não entram por aqui.</p>
-    </article>
-  </div>
-</section>
-{% endblock %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AV Desk · Audiovisual BRASA</title>
+  <link rel="stylesheet" href="css/avdesk.css">
+  <script src="config.js"></script>
+  <script type="module" src="js/pages/landing.js"></script>
+</head>
+<body>
+  <noscript><p class="page">O AV Desk precisa de JavaScript para funcionar.</p></noscript>
+</body>
+</html>

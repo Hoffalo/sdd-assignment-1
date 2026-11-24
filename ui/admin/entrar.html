@@ -1,17 +1,14 @@
-{% extends "base.html" %}
-{% from "_macros.html" import csrf %}
-{% block title %}Entrar{% endblock %}
-{% block content %}
-<section class="card">
-  <h1>Área da gerência de Audiovisual</h1>
-  <form method="post">
-    {{ csrf() }}
-    <div class="field{% if error %} has-error{% endif %}">
-      <label for="password">Senha</label>
-      <input id="password" name="password" type="password" autocomplete="current-password" autofocus>
-      {% if error %}<span class="error">{{ error }}</span>{% endif %}
-    </div>
-    <button type="submit">Entrar</button>
-  </form>
-</section>
-{% endblock %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar · Audiovisual BRASA</title>
+  <link rel="stylesheet" href="../css/avdesk.css">
+  <script src="../config.js"></script>
+  <script type="module" src="../js/pages/admin-login.js"></script>
+</head>
+<body>
+  <noscript><p class="page">O AV Desk precisa de JavaScript para funcionar.</p></noscript>
+</body>
+</html>
