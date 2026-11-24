@@ -12,7 +12,7 @@ from avdesk_requests.domain.briefing import Briefing
 from avdesk_requests.domain.leadtime import LeadTimeAssessment
 from avdesk_requests.domain.lifecycle import Action
 from avdesk_requests.domain.metrics import RequestMetrics
-from avdesk_requests.domain.models import Catalog, Question, Request, RequestEvent
+from avdesk_requests.domain.models import Catalog, Question, Request, RequestEvent, Status
 
 
 def iso(value: date | datetime | None) -> str | None:
@@ -33,6 +33,7 @@ def catalog_json(catalog: Catalog) -> dict[str, Any]:
         "questions": [question_json(q) for q in sorted(catalog.questions, key=lambda q: q.position)],
         "diretorias": [{"id": d.id, "name": d.name} for d in catalog.diretorias],
         "analysts": [{"id": a.id, "name": a.name} for a in catalog.analysts],
+        "statuses": [{"value": str(s), "label": s.label} for s in Status],
     }
 
 

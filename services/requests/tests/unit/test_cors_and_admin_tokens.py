@@ -72,3 +72,7 @@ def test_the_proxy_forwards_calls_for_the_admin(mocker):
 def test_the_proxy_refuses_everyone_else(mocker):
     with pytest.raises(AdminRequired):
         AdminOnly(mocker.Mock(), lambda: False).inbox()
+
+
+def test_answers_are_never_cached_by_the_browser(client):
+    assert client.get("/health").headers["Cache-Control"] == "no-store"

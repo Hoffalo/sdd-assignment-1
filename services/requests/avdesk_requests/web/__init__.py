@@ -22,6 +22,13 @@ def create_web_app(health_probe: HealthProbe, version: str, cors_origin: str = "
             return jsonify(status="ok", db="ok", version=version), 200
         return jsonify(status="unavailable", db="unavailable", version=version), 503
 
+    @app.after_request
+    def never_cache(response):
+        # Answers change with every status update and some are admin-only, so
+        # the browser must always ask again (a reload once showed stale data).
+        response.headers.setdefault("Cache-Control", "no-store")
+        return response
+
     @app.errorhandler(404)
     def not_found(_error):
         return jsonify(error="Not found"), 404
