@@ -129,6 +129,7 @@ class Request:
     delivery_url: str | None = None
     delivered_at: datetime | None = None
     task_url: str | None = None
+    invites_pending: bool = False
 
 
 @dataclass(frozen=True)

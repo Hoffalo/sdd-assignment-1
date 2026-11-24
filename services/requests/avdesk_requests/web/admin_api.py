@@ -100,6 +100,17 @@ def undo(request_id):
     return detail_response(request_id)
 
 
+@blueprint.post("/requests/<int:request_id>/invites")
+def retry_invites(request_id):
+    requests = guarded_requests()
+    if requests.get(request_id).delivered_at is None:
+        return jsonify(error="O pedido ainda não foi entregue."), 409
+    # The outcome is in the detail's invites_pending, so the page shows the
+    # same notice whether the first try or this retry failed.
+    current_app.extensions["avdesk"].invites.send(requests.snapshot(request_id))
+    return detail_response(request_id)
+
+
 @blueprint.get("/metrics")
 def metrics():
     requests = guarded_requests()

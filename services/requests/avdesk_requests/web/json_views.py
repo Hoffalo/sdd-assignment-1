@@ -88,6 +88,7 @@ def detail_json(request: Request, timeline: list[RequestEvent], actions: list[Ac
     return {
         "id": request.id, **_status_fields(request), "tracking_token": request.tracking_token,
         "briefing_score": request.briefing_score, "task_url": request.task_url,
+        "invites_pending": request.invites_pending,
         "accepted_at": iso(request.accepted_at), "delivered_at": iso(request.delivered_at),
         "created_at": iso(request.created_at), "briefing": briefing_json(request.briefing),
         "actions": [{"name": a.name, "label": a.label} for a in actions], "can_undo": can_undo,

@@ -7,7 +7,7 @@ composition root's job. The service only speaks JSON: the pages live in ui/.
 from flask import Flask, jsonify
 
 from avdesk_requests.health import HealthProbe
-from avdesk_requests.web import admin_api, cors, public_api, request_log
+from avdesk_requests.web import admin_api, cors, public_api, request_log, service_api
 from avdesk_requests.web.admin_guard import AdminTokens
 
 
@@ -45,8 +45,10 @@ def create_web_app(health_probe: HealthProbe, version: str, cors_origin: str = "
     return app
 
 
-def register_api(app: Flask, services, admin_tokens: AdminTokens) -> None:
+def register_api(app: Flask, services, admin_tokens: AdminTokens, service_tokens: AdminTokens) -> None:
     app.extensions["avdesk"] = services
     app.extensions["avdesk_admin_tokens"] = admin_tokens
+    app.extensions["avdesk_service_tokens"] = service_tokens
     app.register_blueprint(public_api.blueprint)
     app.register_blueprint(admin_api.blueprint)
+    app.register_blueprint(service_api.blueprint)

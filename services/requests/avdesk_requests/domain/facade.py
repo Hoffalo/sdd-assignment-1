@@ -16,6 +16,7 @@ from avdesk_requests.domain.lifecycle import Action, Lifecycle, StatusCommandFac
 from avdesk_requests.domain.models import WORKLOAD_STATUSES, Catalog, Request, RequestEvent, Status
 from avdesk_requests.domain.repository import CatalogReader, RequestFilter, RequestReader, RequestWriter
 from avdesk_requests.domain.summary import briefing_markdown, slack_message
+from avdesk_requests.domain.verdict import FEEDBACK_ACTOR, Verdict, action_for_verdict
 from avdesk_requests.tokens import TokenGenerator
 
 REQUESTER = "solicitante"
@@ -113,6 +114,21 @@ class RequestsFacade:
 
     def attach_task_url(self, request_id: int, url: str) -> None:
         self._writer.set_task_url(request_id, url)
+
+    # Across the seam
+
+    def snapshot(self, request_id: int) -> RequestSnapshot:
+        return self._snapshot(self.get(request_id))
+
+    def mark_invites_pending(self, request_id: int, pending: bool) -> None:
+        self._writer.set_invites_pending(request_id, pending)
+
+    def apply_requester_verdict(self, request_id: int, verdict: Verdict) -> Request:
+        request = self.get(request_id)
+        step = action_for_verdict(request.status, verdict)
+        if step is None:
+            return request
+        return self.perform(request_id, step.action, actor=FEEDBACK_ACTOR, note=step.note)
 
     def _announce(self, from_status: Status, to_status: Status, request_id: int) -> Request:
         updated = self.get(request_id)

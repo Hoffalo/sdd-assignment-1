@@ -11,6 +11,10 @@ Admin routes receive AdminOnly(facade) instead of the facade itself. The
 proxy has the same methods as the object it wraps but checks the token
 before forwarding any call, so the rule lives in one place and a new admin
 route cannot forget it.
+
+The same signed-token scheme authenticates the two services to each other,
+with a different claim: an admin token cannot call a service endpoint and a
+service token cannot open admin pages, so a leak of one never grants both.
 """
 import hmac
 from typing import Callable
@@ -19,6 +23,7 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 TOKEN_SALT = "avdesk-admin"
 ADMIN_CLAIM = {"role": "av_manager"}
+SERVICE_CLAIM = {"role": "avdesk_service"}
 
 
 class AdminRequired(Exception):
@@ -26,18 +31,19 @@ class AdminRequired(Exception):
 
 
 class AdminTokens:
-    def __init__(self, secret: str, ttl_seconds: int):
+    def __init__(self, secret: str, ttl_seconds: int, claim: dict = ADMIN_CLAIM):
         self._serializer = URLSafeTimedSerializer(secret, salt=TOKEN_SALT)
         self.ttl_seconds = ttl_seconds
+        self._claim = claim
 
     def issue(self) -> str:
-        return self._serializer.dumps(ADMIN_CLAIM)
+        return self._serializer.dumps(self._claim)
 
     def is_valid(self, token: str | None) -> bool:
         if not token:
             return False
         try:
-            return self._serializer.loads(token, max_age=self.ttl_seconds) == ADMIN_CLAIM
+            return self._serializer.loads(token, max_age=self.ttl_seconds) == self._claim
         except (BadSignature, SignatureExpired):
             return False
 

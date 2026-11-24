@@ -39,6 +39,7 @@ class Config:
     approval_buffer_days: int
     clickup_api_token: str
     clickup_list_id: str
+    feedback_url: str
 
     @classmethod
     def from_env(cls, env: Mapping[str, str]) -> "Config":
@@ -60,6 +61,7 @@ class Config:
             approval_buffer_days=int(env.get("C_LEVEL_APPROVAL_BUFFER_DAYS", "3")),
             clickup_api_token=env.get("CLICKUP_API_TOKEN", ""),
             clickup_list_id=env.get("CLICKUP_LIST_ID", ""),
+            feedback_url=env.get("FEEDBACK_URL", ""),
         )
 
     @property

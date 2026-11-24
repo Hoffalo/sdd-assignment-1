@@ -18,24 +18,30 @@ from avdesk_requests.domain.intake import BriefingIntake, BriefingScorer
 from avdesk_requests.domain.lifecycle import Lifecycle, StatusCommandFactory
 from avdesk_requests.domain.repository import SqlServerCatalogReader, SqlServerRequestRepository
 from avdesk_requests.domain.validators import BriefingValidator
+from avdesk_requests.feedback_client import DisabledFeedbackInvites, FeedbackInvites, HttpFeedbackInvites
 from avdesk_requests.health import DatabaseHealthProbe
+from avdesk_requests.invite_observer import FeedbackInviteObserver
 from avdesk_requests.migrations import MIGRATIONS_DIR, MigrationRunner, load_migrations
 from avdesk_requests.seeding import load_reference_data, load_seed
 from avdesk_requests.task_observer import TaskTrackerObserver
 from avdesk_requests.task_tracker import ClickUpTaskTracker, DisabledTaskTracker, TaskTracker
 from avdesk_requests.tokens import SecureTokenGenerator, TokenGenerator
 from avdesk_requests.web import create_web_app, register_api
-from avdesk_requests.web.admin_guard import AdminTokens
+from avdesk_requests.web.admin_guard import SERVICE_CLAIM, AdminTokens
 
 # /health must answer in seconds, so it tries the database once; the boot
 # uses the default policy and waits out a paused serverless database.
 HEALTH_RETRY = RetryPolicy(attempts=1)
+# A service token is issued for each call, so a few minutes of life is plenty
+# and a captured one is useless soon after.
+SERVICE_TOKEN_TTL_S = 5 * 60
 
 
 @dataclass(frozen=True)
 class AppServices:
     requests: RequestsFacade
     config: Config
+    invites: FeedbackInviteObserver
 
 
 def build_requests_domain(database: Database, clock: Clock, tokens: TokenGenerator,
@@ -62,11 +68,19 @@ def build_task_tracker(config: Config) -> TaskTracker:
     return DisabledTaskTracker()
 
 
+def build_feedback_invites(config: Config, service_tokens: AdminTokens) -> FeedbackInvites:
+    if config.feedback_url:
+        return HttpFeedbackInvites(config.feedback_url, service_tokens.issue)
+    return DisabledFeedbackInvites()
+
+
 def build_services(config: Config, database: Database, clock: Clock, tokens: TokenGenerator,
-                   tracker: TaskTracker) -> AppServices:
+                   tracker: TaskTracker, feedback: FeedbackInvites) -> AppServices:
     requests, request_events = build_requests_domain(database, clock, tokens, config.approval_buffer_days)
     request_events.attach(TaskTrackerObserver(tracker, requests))
-    return AppServices(requests, config)
+    invites = FeedbackInviteObserver(feedback, requests)
+    request_events.attach(invites)
+    return AppServices(requests, config, invites)
 
 
 def prepare_database(database: Database) -> None:
@@ -75,13 +89,15 @@ def prepare_database(database: Database) -> None:
 
 
 def create_app(config: Config, clock: Clock | None = None, tokens: TokenGenerator | None = None,
-               tracker: TaskTracker | None = None) -> Flask:
+               tracker: TaskTracker | None = None, feedback: FeedbackInvites | None = None) -> Flask:
     database = Database(config.database_url)
     prepare_database(database)
 
     health_probe = DatabaseHealthProbe(database.with_retry(HEALTH_RETRY))
     app = create_web_app(health_probe, config.version, config.cors_origin)
+    service_tokens = AdminTokens(config.admin_token_secret, SERVICE_TOKEN_TTL_S, SERVICE_CLAIM)
     services = build_services(config, database, clock or SystemClock(), tokens or SecureTokenGenerator(),
-                              tracker or build_task_tracker(config))
-    register_api(app, services, AdminTokens(config.admin_token_secret, config.admin_token_ttl_s))
+                              tracker or build_task_tracker(config),
+                              feedback or build_feedback_invites(config, service_tokens))
+    register_api(app, services, AdminTokens(config.admin_token_secret, config.admin_token_ttl_s), service_tokens)
     return app

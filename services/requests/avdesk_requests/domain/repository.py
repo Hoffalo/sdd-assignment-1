@@ -65,6 +65,9 @@ class RequestWriter(ABC):
     @abstractmethod
     def set_task_url(self, request_id: int, url: str) -> None: ...
 
+    @abstractmethod
+    def set_invites_pending(self, request_id: int, pending: bool) -> None: ...
+
 
 def _decode_answers(raw: str) -> dict:
     return {k: tuple(v) if isinstance(v, list) else v for k, v in json.loads(raw).items()}
@@ -95,6 +98,7 @@ def _to_request(row) -> Request:
         created_at=from_db_time(row["created_at"]), updated_at=from_db_time(row["updated_at"]),
         analyst_id=row["analyst_id"], accepted_at=from_db_time(row["accepted_at"]), review_url=row["review_url"],
         delivery_url=row["delivery_url"], delivered_at=from_db_time(row["delivered_at"]), task_url=row["task_url"],
+        invites_pending=bool(row["invites_pending"]),
     )
 
 
@@ -203,3 +207,7 @@ class SqlServerRequestRepository(RequestReader, RequestWriter):
     def set_task_url(self, request_id: int, url: str) -> None:
         with self._db.connect() as session:
             session.execute("UPDATE requests SET task_url = %s WHERE id = %s", (url, request_id))
+
+    def set_invites_pending(self, request_id: int, pending: bool) -> None:
+        with self._db.connect() as session:
+            session.execute("UPDATE requests SET invites_pending = %s WHERE id = %s", (pending, request_id))

@@ -50,7 +50,7 @@ class DisabledTaskTracker(TaskTracker):
         return None
 
 
-Opener = Callable[[urllib.request.Request, float], object]
+Opener = Callable[..., object]
 
 
 class ClickUpTaskTracker(TaskTracker):
@@ -74,7 +74,8 @@ class ClickUpTaskTracker(TaskTracker):
             method="POST",
         )
         try:
-            with self._open(request, TIMEOUT_SECONDS) as response:
+            # By keyword: urlopen's second positional parameter is the body.
+            with self._open(request, timeout=TIMEOUT_SECONDS) as response:
                 payload = json.loads(response.read().decode("utf-8"))
         except (urllib.error.URLError, TimeoutError, ValueError) as error:
             raise TaskTrackerError(f"ClickUp task creation failed: {error}") from error
