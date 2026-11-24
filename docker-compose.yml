@@ -1,0 +1,107 @@
+# The whole AV Desk on one machine: `docker compose up --build`, then open
+# http://localhost:8080. Two service containers, one SQL Server holding one
+# database per service, a one-off job creating those databases and logins,
+# and a stock nginx serving ui/ (not a service container: no Dockerfile).
+#
+# The passwords below are throwaway values for this local stack only, so a
+# clean clone runs with no setup. They are never used on Azure, where every
+# secret comes from GitHub Actions secrets (infra/README.md). Override any of
+# them in a .env file next to this one (gitignored).
+
+name: avdesk
+
+x-local-secrets: &local-secrets
+  MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-LocalDev_Only_Sa_1}
+  REQUESTS_DB_PASSWORD: ${REQUESTS_DB_PASSWORD:-LocalDev_Only_Requests_1}
+  FEEDBACK_DB_PASSWORD: ${FEEDBACK_DB_PASSWORD:-LocalDev_Only_Feedback_1}
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-LocalDev_Only_Sa_1}
+    volumes:
+      # A named volume: `docker compose down` keeps the data, so migrations
+      # are exercised against existing rows, as on Azure. `down -v` resets it.
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -b -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' -o /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  db-init:
+    # Same image as the server, only for its sqlcmd; it exits when done.
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment: *local-secrets
+    volumes:
+      - ./db:/db:ro
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >-
+        /opt/mssql-tools18/bin/sqlcmd -C -b -S sqlserver -U sa -P "$$MSSQL_SA_PASSWORD"
+        -i /db/init.sql
+        -v REQUESTS_DB_PASSWORD="$$REQUESTS_DB_PASSWORD" FEEDBACK_DB_PASSWORD="$$FEEDBACK_DB_PASSWORD"
+    restart: "no"
+
+  requests:
+    build:
+      context: services/requests
+      args:
+        GIT_SHA: ${GIT_SHA:-local}
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: mssql://avdesk_requests:${REQUESTS_DB_PASSWORD:-LocalDev_Only_Requests_1}@sqlserver:1433/avdesk_requests
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-local-admin}
+      ADMIN_TOKEN_SECRET: ${ADMIN_TOKEN_SECRET:-local-only-signing-key}
+      CORS_ORIGIN: http://localhost:8080
+      FEEDBACK_URL: http://feedback:8000
+    ports:
+      - "8001:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      interval: 10s
+      timeout: 6s
+      retries: 6
+      start_period: 20s
+
+  feedback:
+    build:
+      context: services/feedback
+      args:
+        GIT_SHA: ${GIT_SHA:-local}
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: mssql://avdesk_feedback:${FEEDBACK_DB_PASSWORD:-LocalDev_Only_Feedback_1}@sqlserver:1433/avdesk_feedback
+      ADMIN_TOKEN_SECRET: ${ADMIN_TOKEN_SECRET:-local-only-signing-key}
+      CORS_ORIGIN: http://localhost:8080
+      REQUESTS_URL: http://requests:8000
+    ports:
+      - "8002:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      interval: 10s
+      timeout: 6s
+      retries: 6
+      start_period: 20s
+
+  ui:
+    # ui/config.js already points at localhost:8001 and :8002, the ports above.
+    image: nginx:1.27-alpine
+    volumes:
+      - ./ui:/usr/share/nginx/html:ro
+    ports:
+      - "8080:80"
+
+volumes:
+  sqlserver-data:

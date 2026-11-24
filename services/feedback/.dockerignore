@@ -1,0 +1,10 @@
+# Only what the Dockerfile copies by name reaches the image anyway; this keeps
+# the build context small and caches and tests out of it.
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.coverage
+htmlcov
+tests
+requirements-dev.txt
+pytest.ini
