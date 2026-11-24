@@ -5,7 +5,7 @@ import pytest
 from avdesk_requests.domain.briefing import BriefingBuilder, BriefingDirector
 from avdesk_requests.domain.models import Status
 from avdesk_requests.domain.repository import (
-    RequestFilter, SqliteCatalogReader, SqliteRequestRepository, StaleTransition,
+    RequestFilter, SqlServerCatalogReader, SqlServerRequestRepository, StaleTransition,
 )
 
 NOW = datetime(2026, 10, 9, 12, 0, tzinfo=timezone.utc)
@@ -13,7 +13,7 @@ NOW = datetime(2026, 10, 9, 12, 0, tzinfo=timezone.utc)
 
 @pytest.fixture
 def repo(seeded_db):
-    return SqliteRequestRepository(seeded_db)
+    return SqlServerRequestRepository(seeded_db)
 
 
 @pytest.fixture
@@ -23,13 +23,13 @@ def stored(repo):
 
 
 def test_catalog_is_loaded_from_seeded_tables(seeded_db):
-    catalog = SqliteCatalogReader(seeded_db).load()
+    catalog = SqlServerCatalogReader(seeded_db).load()
 
     assert [t.code for t in catalog.types] == ["teaser", "institucional", "redes_sociais", "outro"]
 
 
 def test_seeded_questions_keep_their_options(seeded_db):
-    catalog = SqliteCatalogReader(seeded_db).load()
+    catalog = SqlServerCatalogReader(seeded_db).load()
 
     tom = next(q for q in catalog.questions if q.key == "tom")
     assert "Institucional" in tom.options

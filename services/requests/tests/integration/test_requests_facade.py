@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from avdesk.composition import build_requests_domain
+from avdesk_requests.composition import build_requests_domain
 from avdesk_requests.domain.briefing import BriefingBuilder, BriefingDirector
 from avdesk_requests.domain.events import RequestObserver
 from avdesk_requests.domain.lifecycle import MissingInput, NotUndoable, TransitionNotAllowed

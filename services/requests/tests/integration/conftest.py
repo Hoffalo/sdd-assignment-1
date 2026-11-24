@@ -12,6 +12,8 @@ import uuid
 import pytest
 
 from avdesk_requests.database import Database, DatabaseUrl, RetryPolicy
+from avdesk_requests.migrations import MIGRATIONS_DIR, MigrationRunner, load_migrations
+from avdesk_requests.seeding import load_reference_data, load_seed
 
 SERVER_URL_ENV = "TEST_SQLSERVER_URL"
 # A test that waits a minute for a missing server is worse than a clear failure.
@@ -37,3 +39,15 @@ def empty_database(sql_server):
     with sql_server.connect() as session:
         session.execute(f"ALTER DATABASE [{name}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE")
         session.execute(f"DROP DATABASE [{name}]")
+
+
+@pytest.fixture
+def migrated_db(empty_database):
+    MigrationRunner(empty_database).apply(load_migrations(MIGRATIONS_DIR))
+    return empty_database
+
+
+@pytest.fixture
+def seeded_db(migrated_db):
+    load_reference_data(migrated_db, load_seed())
+    return migrated_db
