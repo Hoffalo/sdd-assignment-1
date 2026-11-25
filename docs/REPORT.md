@@ -223,7 +223,13 @@ Pipeline evidence, from the first deployment:
 
 Deliberately not tested: the browser JavaScript (checked by hand in each phase), Azure itself beyond the post-deploy health check, ClickUp's real API, and performance.
 
-## 8. AI disclosure
+## 8. Known gaps
+
+- **Databases are serverless, not on the free offer.** None of the five regions this Azure for Students subscription allows would create a free-offer database. Spain, Belgium and Denmark refuse it; Switzerland and Norway refuse new SQL servers. The databases are General Purpose serverless, 0.5–1 vCore, auto-pausing after 60 minutes. They are billed per second only while active, plus storage, from the student credit (ADR-8).
+- **The SQL server is `lhoffmann-sql3`**, not `lhoffmann-sql`. Each refused attempt left Azure holding the name in that region.
+- **Commit spread.** The Assignment 2 commits fall on 23, 24 and 25 November. The brief asks for 6 days with no day over 40%, and for ADRs 6–10 on 3 commit dates: they are on 24 and 25 November. I did not rewrite dates to meet the rule.
+
+## 9. AI disclosure
 
 I acknowledge the use of Anthropic's Claude, through Claude Code (Claude Opus 5.5) in the Claude desktop app, to plan and carry out the split. The prompts used include:
 - pasting the Assignment 2 brief and approving a six-phase plan;
