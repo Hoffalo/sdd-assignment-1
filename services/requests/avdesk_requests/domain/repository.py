@@ -74,7 +74,8 @@ def _decode_answers(raw: str) -> dict:
 
 
 _BRIEFING_COLUMNS = ("requester_name", "requester_email", "diretoria_id", "type_code", "type_detail", "title",
-                     "campaign", "needs_c_level_approval", "needed_by", "needed_by_reason", "rush_reason", "answers_json")
+                     "campaign", "needs_c_level_approval", "needed_by", "needed_by_reason", "rush_reason",
+                     "answers_json")
 
 
 def _briefing_values(briefing: Briefing) -> list[Any]:

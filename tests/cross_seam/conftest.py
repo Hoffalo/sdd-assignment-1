@@ -53,7 +53,8 @@ BRIEFING = {
 
 
 def call(method: str, url: str, body: dict | None = None, headers: dict | None = None) -> tuple[int, object]:
-    request = urllib.request.Request(url, method=method, headers={"Content-Type": "application/json", **(headers or {})},
+    request = urllib.request.Request(url, method=method,
+                                     headers={"Content-Type": "application/json", **(headers or {})},
                                      data=json.dumps(body).encode() if body is not None else None)
     try:
         with urllib.request.urlopen(request, timeout=30) as response:

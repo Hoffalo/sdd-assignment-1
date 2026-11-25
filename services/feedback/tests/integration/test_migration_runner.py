@@ -71,7 +71,8 @@ def test_a_column_can_be_added_and_backfilled_in_one_migration(empty_database, m
 def test_a_failing_migration_leaves_no_trace(empty_database, migrations_dir):
     write(migrations_dir, "002_broken.sql", "ALTER TABLE notes ADD extra INT NULL\nGO\nSELECT * FROM missing_table")
 
-    with pytest.raises(Exception):
+    # pymssql reports the missing table as a ProgrammingError; any error must roll back.
+    with pytest.raises(Exception):  # noqa: B017
         MigrationRunner(empty_database).apply(load_migrations(migrations_dir))
 
     with empty_database.connect() as session:

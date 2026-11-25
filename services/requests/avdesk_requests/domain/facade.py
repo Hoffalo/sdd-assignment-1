@@ -145,7 +145,8 @@ class RequestsFacade:
             type_code=briefing.type_code, type_label=request_type.label if request_type else briefing.type_code,
             diretoria=diretoria.name if diretoria else "", campaign=briefing.campaign,
             requester_name=briefing.requester_name, requester_email=briefing.requester_email,
-            reviewers=briefing.reviewers, needed_by=briefing.needed_by, needs_c_level_approval=briefing.needs_c_level_approval,
+            reviewers=briefing.reviewers, needed_by=briefing.needed_by,
+            needs_c_level_approval=briefing.needs_c_level_approval,
             rush=request.rush, summary_markdown=briefing_markdown(request, catalog),
             delivery_url=request.delivery_url, delivered_at=request.delivered_at,
         )

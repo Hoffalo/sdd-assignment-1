@@ -1,0 +1,9 @@
+# One lint configuration for both services and the cross-seam tests.
+# pycodestyle, pyflakes and bugbear: they catch real mistakes (unused or
+# undefined names, mutable defaults, shadowed loops) without arguing style
+# the code already follows. 120 columns matches the existing code.
+line-length = 120
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "W", "B"]

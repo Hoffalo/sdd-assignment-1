@@ -155,6 +155,7 @@ def test_a_rush_reason_is_dropped_when_the_deadline_is_not_short(facade, directo
 
 
 def test_a_rush_reason_is_kept_when_the_deadline_is_short(facade, director):
-    _, request = facade.submit(director.teaser(needed_by=date(2026, 10, 14), rush_reason="Patrocinador confirmou ontem"))
+    briefing = director.teaser(needed_by=date(2026, 10, 14), rush_reason="Patrocinador confirmou ontem")
+    _, request = facade.submit(briefing)
 
     assert request.briefing.rush_reason == "Patrocinador confirmou ontem"

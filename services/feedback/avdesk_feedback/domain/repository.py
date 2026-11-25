@@ -93,7 +93,9 @@ class SqlServerFeedbackRepository(FeedbackReader, FeedbackWriter):
                 "JOIN feedback_invites i ON i.id = r.invite_id "
                 "WHERE i.request_id = %s AND i.is_requester = 1 AND r.verdict_pending = 1 ORDER BY r.id DESC",
                 (request_id,)).fetchone()
-        return ResponseReceived(row["id"], request_id, row["public_code"], Outcome(row["outcome"]), True) if row else None
+        if row is None:
+            return None
+        return ResponseReceived(row["id"], request_id, row["public_code"], Outcome(row["outcome"]), True)
 
     def all_invites(self) -> list[FeedbackInvite]:
         with self._db.connect() as session:

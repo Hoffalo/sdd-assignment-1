@@ -61,7 +61,8 @@ def test_c_level_policy_moves_the_work_deadline_before_the_approval_round():
     assert assessment.work_deadline == date(2026, 11, 5)
 
 
-@pytest.mark.parametrize("needs_c_level_approval, expected", [(False, StandardLeadTime), (True, CLevelApprovalLeadTime)])
+@pytest.mark.parametrize("needs_c_level_approval, expected",
+                         [(False, StandardLeadTime), (True, CLevelApprovalLeadTime)])
 def test_policy_is_chosen_by_c_level_approval_flag(needs_c_level_approval, expected):
     policy = lead_time_policy_for(min_days=10, needs_c_level_approval=needs_c_level_approval, approval_buffer_days=3)
 
