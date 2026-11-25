@@ -110,16 +110,23 @@ jobs:
       contents: read
       packages: write
     strategy:
+      # One image failing to push must not cancel the other mid-push.
+      fail-fast: false
       matrix:
         service: [requests, feedback]
     steps:
       - uses: actions/checkout@v4
       - name: Log in to GHCR with the run's own token
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      # The source label links a new GHCR package to this repository, which is
+      # what lets the run's own token create it and push to it (the first
+      # push without it was refused with permission_denied: write_package).
       - name: Build and push, tagged with the commit SHA
         run: |
           image="$REGISTRY/avdesk-${{ matrix.service }}"
-          docker build --build-arg GIT_SHA=${{ github.sha }} -t "$image:${{ github.sha }}" -t "$image:latest" \
+          docker build --build-arg GIT_SHA=${{ github.sha }} \
+            --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            -t "$image:${{ github.sha }}" -t "$image:latest" \
             services/${{ matrix.service }}
           docker push "$image:${{ github.sha }}"
           docker push "$image:latest"
