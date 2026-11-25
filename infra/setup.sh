@@ -12,6 +12,9 @@
 # Passwords are generated here and written only to infra/.secrets.local
 # (gitignored), from where they are copied into GitHub Actions secrets.
 set -euo pipefail
+# Git Bash on Windows rewrites arguments starting with / (Azure resource IDs
+# such as /subscriptions/...) into Windows paths; this turns that off.
+export MSYS_NO_PATHCONV=1
 
 AZ=${AZ:-az}
 PREFIX=lhoffmann
@@ -39,6 +42,14 @@ else
   REQUESTS_DB_PASSWORD=$(new_password)
   FEEDBACK_DB_PASSWORD=$(new_password)
   ADMIN_TOKEN_SECRET=$(openssl rand -hex 32)
+  # Saved before anything is created, so a run that fails halfway never
+  # leaves a server whose password nobody knows.
+  cat > "$SECRETS_FILE" <<EOF
+SQL_ADMIN_PASSWORD=$SQL_ADMIN_PASSWORD
+REQUESTS_DB_PASSWORD=$REQUESTS_DB_PASSWORD
+FEEDBACK_DB_PASSWORD=$FEEDBACK_DB_PASSWORD
+ADMIN_TOKEN_SECRET=$ADMIN_TOKEN_SECRET
+EOF
 fi
 
 step "Resource providers"
@@ -65,12 +76,19 @@ $AZ identity federated-credential create -g "$RG" --identity-name "$PREFIX-githu
   --audiences api://AzureADTokenExchange --output none
 # Contributor on this resource group only: the pipeline can update the apps
 # and upload the UI, and can touch nothing else in the subscription.
-$AZ role assignment create --assignee-object-id "$PRINCIPAL_ID" --assignee-principal-type ServicePrincipal \
-  --role Contributor --scope "$RG_ID" --output none || true
+if [ -z "$($AZ role assignment list --assignee "$PRINCIPAL_ID" --role Contributor --scope "$RG_ID" --query "[].id" -o tsv)" ]; then
+  $AZ role assignment create --assignee-object-id "$PRINCIPAL_ID" --assignee-principal-type ServicePrincipal \
+    --role Contributor --scope "$RG_ID" --output none
+fi
 
 step "SQL server $SQL_SERVER and one serverless database per service (free offer)"
-$AZ sql server create -g "$RG" -n "$SQL_SERVER" -l "$LOCATION" \
-  --admin-user "$SQL_ADMIN" --admin-password "$SQL_ADMIN_PASSWORD" --output none
+if $AZ sql server show -g "$RG" -n "$SQL_SERVER" --output none 2>/dev/null; then
+  # Re-run: make the admin password match the one in the secrets file.
+  $AZ sql server update -g "$RG" -n "$SQL_SERVER" --admin-password "$SQL_ADMIN_PASSWORD" --output none
+else
+  $AZ sql server create -g "$RG" -n "$SQL_SERVER" -l "$LOCATION" \
+    --admin-user "$SQL_ADMIN" --admin-password "$SQL_ADMIN_PASSWORD" --output none
+fi
 # 0.0.0.0-0.0.0.0 is Azure's notation for "Azure services", which is how the
 # Container Apps reach the server; no other address is allowed.
 $AZ sql server firewall-rule create -g "$RG" -s "$SQL_SERVER" -n AllowAzureServices \
