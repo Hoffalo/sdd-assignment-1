@@ -64,11 +64,11 @@ flowchart LR
   GH -- "CI: specs, lint, tests (SQL Server container),<br/>cross-seam, docker build" --> GH
   GH -- "main only: push :sha" --> GHCR["ghcr.io/hoffalo/avdesk-requests<br/>ghcr.io/hoffalo/avdesk-feedback"]
   GH -- "OIDC as lhoffmann-github" --> AZ
-  subgraph AZ["rg-lhoffmann (norwayeast)"]
+  subgraph AZ["rg-lhoffmann (belgiumcentral)"]
     ENV["Container Apps env lhoffmann-env<br/>+ Log Analytics"]
     CR["lhoffmann-requests (0-1)"]
     CF["lhoffmann-feedback (0-1)"]
-    SQL["SQL server lhoffmann-sql2<br/>lhoffmann-requests-db, lhoffmann-feedback-db<br/>serverless, free offer"]
+    SQL["SQL server lhoffmann-sql3<br/>lhoffmann-requests-db, lhoffmann-feedback-db<br/>serverless, auto-pause 60 min"]
     ST["Storage lhoffmannui<br/>static website $web"]
     ENV --- CR
     ENV --- CF

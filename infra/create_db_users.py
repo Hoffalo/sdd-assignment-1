@@ -20,7 +20,7 @@ from pathlib import Path
 import pymssql
 
 PREFIX = "lhoffmann"
-SERVER = f"{PREFIX}-sql2.database.windows.net"
+SERVER = f"{PREFIX}-sql3.database.windows.net"
 SQL_ADMIN = "avdeskadmin"
 SECRETS_FILE = Path(__file__).with_name(".secrets.local")
 SERVICES = {"requests": "REQUESTS_DB_PASSWORD", "feedback": "FEEDBACK_DB_PASSWORD"}
@@ -37,7 +37,7 @@ def read_secrets(path: Path) -> dict[str, str]:
 
 
 def create_user(database: str, user: str, password: str, admin_password: str) -> None:
-    # The free-offer database may be paused; the first login wakes it, which
+    # The serverless database may be paused; the first login wakes it, which
     # can take a minute, hence the long login timeout.
     with pymssql.connect(server=SERVER, user=SQL_ADMIN, password=admin_password, database=database,
                          login_timeout=90, autocommit=True) as connection:

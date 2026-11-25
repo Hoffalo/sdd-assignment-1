@@ -11,7 +11,7 @@ ui:
 azure:
   resource_group: rg-lhoffmann
   container_apps_environment: lhoffmann-env
-  sql_server: lhoffmann-sql2
+  sql_server: lhoffmann-sql3
   registry: ghcr.io/hoffalo
 
 services:

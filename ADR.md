@@ -60,17 +60,17 @@ Consequences: Recovery plan for a bad migration in production:
 (3) If a migration succeeded but damaged data, restore the database with Azure SQL point-in-time restore into a new database and point DATABASE_URL at it.
 Startup migrations are safe only because each app has at most one replica (ADR-8). With more replicas they would race, and would need a lock (`sp_getapplock`) or a one-off job.
 
-## 8. Serverless hosting: Container Apps Consumption, Azure SQL serverless free offer, static website
+## 8. Serverless hosting: Container Apps Consumption, Azure SQL serverless, static website
 Date: 2026-11-25
 Status: Decided
 Context: The app must cost nothing while idle, which is most of the time: a few hundred requests a year, used during working hours.
-Decision: Both services run on Azure Container Apps (Consumption plan, one environment `lhoffmann-env`), with 0 to 1 replica and public HTTPS ingress. Each has its own serverless database (`lhoffmann-requests-db`, `lhoffmann-feedback-db`) on one logical server, on the free offer: 0.5–1 vCore, auto-pause after 60 minutes, 32 GB. When the monthly allowance runs out, the database pauses instead of billing. The UI is a Storage static website (`lhoffmannui`), and images live on GHCR. Infrastructure is created once by `infra/setup.sh` (Azure CLI) and then changed only by the pipeline. Everything is in `norwayeast`, chosen from the five regions the subscription allows. `spaincentral` refuses free-offer databases, and `switzerlandnorth` refused new SQL servers. A failed attempt there still holds the name `lhoffmann-sql`, so the server is `lhoffmann-sql2`.
+Decision: Both services run on Azure Container Apps (Consumption plan, one environment `lhoffmann-env`), with 0 to 1 replica and public HTTPS ingress. Each has its own serverless database (`lhoffmann-requests-db`, `lhoffmann-feedback-db`) on one logical server: General Purpose serverless, Gen5, 0.5–1 vCore, locally redundant backups, auto-pause after 60 minutes. They are **not** on the free offer the brief asks for, because no region allowed to this subscription provides it. The UI is a Storage static website (`lhoffmannui`), and images live on GHCR. Infrastructure is created once by `infra/setup.sh` (Azure CLI) and then changed only by the pipeline. All five regions this subscription allows were tried. `spaincentral`, `belgiumcentral` and `denmarkeast` refuse free-offer databases ("Provisioning of free limit database is not supported for provided service level objective or region"), and `switzerlandnorth` and `norwayeast` refuse new SQL servers. So the databases are serverless **without** the free offer, in `belgiumcentral`, and everything else is there too. Each refused attempt left Azure holding the server's name in that region, which is why the server is `lhoffmann-sql3` rather than `lhoffmann-sql`.
 Cost model:
 - Container Apps bills per vCPU-second and GiB-second of running replicas, with a free monthly grant this traffic stays well inside.
-- The databases are free.
+- The databases bill per vCore-second only while active (0.5 vCore minimum), plus storage. Paused, they cost only the storage: cents for a few MB. A working day of use costs well under a euro of student credit. This is the one deviation from free; it is justified because the free offer cannot be provisioned here, and auto-pause keeps it pay-per-use.
 - Storage costs cents per GB.
 - GHCR is free for public images.
-Nothing has a fixed monthly cost.
+Apart from database storage (cents), nothing has a fixed monthly cost.
 Alternatives considered: Bicep instead of CLI commands, rejected for now: the setup runs once and the script is shorter to read, at the cost of no drift detection. Azure Container Registry, rejected because its Basic tier has a fixed monthly fee and GHCR does the same job. App Service, rejected because it is always on.
 Consequences: Scale to zero means cold starts, in layers:
 - After idle, the first request starts a container, which takes a few seconds.
@@ -83,7 +83,7 @@ Consequences: Scale to zero means cold starts, in layers:
 
 At 100x traffic:
 - Raise the maximum replicas, and move migrations to a one-off Container Apps job, or to a SQL lock, so replicas cannot race.
-- Leave the free offer for a database with a minimum vCore, so no request waits for a resume.
+- Use a database with a higher minimum vCore and no auto-pause, so no request waits for a resume.
 - Keep one replica warm in working hours.
 - Add connection pooling.
 - Replace the manual retry button with a queue that retries by itself.
