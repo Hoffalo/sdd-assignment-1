@@ -1,0 +1,7 @@
+2026-11-25T16:09:35 lhoffmann-feedback--0000001 2026-11-25 16:09:34,571 INFO avdesk_feedback.migrations: Applied migration 001_init
+2026-11-25T16:09:35 lhoffmann-feedback--0000001 2026-11-25 16:09:34,690 INFO waitress: Serving on http://0.0.0.0:8000
+2026-11-25T16:09:35 lhoffmann-feedback--0000001 2026-11-25 16:09:34,624 INFO avdesk_feedback.migrations: Applied migration 002_health_probe
+2026-11-25T16:09:35 lhoffmann-feedback--0000001 2026-11-25 16:09:34,677 INFO avdesk_feedback.migrations: Applied migration 003_verdict_pending
+2026-11-25T16:25:28 lhoffmann-feedback--0000002 2026-11-25 16:25:27,398 INFO avdesk_feedback.migrations: Applied migration 004_rename_diretoria_snapshot
+2026-11-25T16:25:28 lhoffmann-feedback--0000002 2026-11-25 16:25:27,425 INFO waitress: Serving on http://0.0.0.0:8000
+2026-11-25T16:29:30 lhoffmann-feedback--0000003 2026-11-25 16:29:28,452 INFO waitress: Serving on http://0.0.0.0:8000

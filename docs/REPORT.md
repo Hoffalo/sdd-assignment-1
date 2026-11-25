@@ -161,7 +161,25 @@ requests-1 | INFO avdesk_requests.migrations: Applied migration 002_health_probe
 requests-1 | INFO avdesk_requests.migrations: Applied migration 003_invites_pending
 ```
 
-**On Azure:** [EVIDENCE TO ADD after the second deployment. The first deployment applies 001–003. Requests and invites are then created through the live UI. A later pull request adds a migration that changes a table already holding rows. Here go the CD run link, the container log line "Applied migration 004_…", and row counts and a sample row before and after.]
+**On Azure.** The first deployment applied 001–003 to empty databases. Through the live UI I then created two requests, delivered one, and answered its feedback link. The pull request that added `004_rename_diretoria_snapshot.sql` was deployed by [run 45653026975](https://github.com/Hoffalo/sdd-assignment-1/actions/runs/45653026975). That migration renames `feedback_invites.diretoria` to `diretoria_name` in place, with `sp_rename`, on a table that already held a row.
+
+Startup log of the feedback container, from the environment's Log Analytics workspace ([full file](evidence-migration-log.txt)):
+
+```
+lhoffmann-feedback--0000001  16:09:34 Applied migration 001_init / 002_health_probe / 003_verdict_pending
+lhoffmann-feedback--0000002  16:25:27 INFO avdesk_feedback.migrations: Applied migration 004_rename_diretoria_snapshot
+lhoffmann-feedback--0000003  16:29:28 INFO waitress: Serving on http://0.0.0.0:8000   (next deploy: nothing to apply)
+```
+
+Data in `lhoffmann-feedback-db`, queried read-only before and after ([before](evidence-migration-before.txt), [after](evidence-migration-after.txt)):
+
+| | Before (migrations 1–3) | After (migrations 1–4) |
+|---|---|---|
+| Column | `diretoria` | `diretoria_name` |
+| Invite 1 | AV-2026-0001, "adf", **Comunicação**, recipient "lala", requester, used 16:18:45 | AV-2026-0001, "adf", **Comunicação**, recipient "lala", requester, used 16:18:45 |
+| Rows | 1 invite, 1 response; requests DB: 2 requests, 6 events | 1 invite, 1 response; requests DB: 2 requests, 6 events |
+
+Locally, the same path is covered by `tests/integration/test_migration_keeps_data.py`. That test writes an invite under migrations 1–3, applies 004, and reads the invite back unchanged.
 
 ## 6. Partial failure
 
