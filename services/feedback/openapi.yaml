@@ -1,0 +1,344 @@
+openapi: 3.0.3
+info:
+  title: AV Desk feedback service
+  version: "2.0.0"
+  description: |
+    Post-delivery feedback: single-use invites for the requester and the
+    reviewers, their answers, and the AV manager's feedback metrics.
+
+    `POST /invites` is called only by the requests service, with a service
+    token signed by the shared ADMIN_TOKEN_SECRET (claim `avdesk_service`).
+    Admin endpoints verify the bearer token the requests service issued at
+    `POST /admin/session` (claim `av_manager`). Every answer carries
+    `Cache-Control: no-store`.
+servers:
+  - url: http://localhost:8002
+    description: docker compose
+tags:
+  - name: health
+  - name: reviewer
+  - name: admin
+  - name: service
+    description: Called by the requests service across the seam.
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Whether this service can read and write its own database
+      responses:
+        "200":
+          description: Database reachable and writable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+        "503":
+          description: Database unavailable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+
+  /invites:
+    post:
+      tags: [service]
+      summary: Create one invite per person for a delivered request
+      description: |
+        Sent by the requests service when a request is delivered. The same
+        delivery (request_id and delivered_at) sent again returns the invites
+        already created, so a retry never duplicates them.
+      security: [{ serviceToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeliveryInput" }
+      responses:
+        "201":
+          description: The invites of this delivery
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AdminInvite" }
+        "401":
+          description: Missing, invalid or non-service token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "422":
+          description: Malformed delivery
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /invites/{token}:
+    parameters:
+      - { name: token, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [reviewer]
+      summary: What a reviewer's link opens
+      responses:
+        "200":
+          description: An open invite with the form choices, or the state of a closed one (used, expired)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicInvite" }
+        "404":
+          description: Unknown token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InviteState" }
+
+  /invites/{token}/response:
+    parameters:
+      - { name: token, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [reviewer]
+      summary: Answer the feedback form (once)
+      description: |
+        The answer is stored first. A requester's verdict is then sent to the
+        requests service; if that fails the answer is still stored (201) and
+        the verdict is kept pending for the AV manager to resend.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AnswerInput" }
+      responses:
+        "201":
+          description: Stored; the invite is now used
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InviteState" }
+        "404":
+          description: Unknown token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InviteState" }
+        "409":
+          description: The invite was already used or has expired
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InviteState" }
+        "422":
+          description: Field errors
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [errors]
+                properties:
+                  errors:
+                    type: object
+                    additionalProperties: { type: string }
+
+  /admin/requests/{request_id}/invites:
+    parameters:
+      - { name: request_id, in: path, required: true, schema: { type: integer } }
+    get:
+      tags: [admin]
+      summary: The invites of one request
+      security: [{ adminToken: [] }]
+      responses:
+        "200":
+          description: Invites, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AdminInvite" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /admin/requests/{request_id}/verdict:
+    parameters:
+      - { name: request_id, in: path, required: true, schema: { type: integer } }
+    post:
+      tags: [admin]
+      summary: Resend a requester's verdict that the requests service did not receive
+      description: Sends nothing when no verdict is pending. The result is in each invite's `verdict_pending`.
+      security: [{ adminToken: [] }]
+      responses:
+        "200":
+          description: The invites after the attempt
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AdminInvite" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /admin/metrics:
+    get:
+      tags: [admin]
+      summary: Feedback metrics (the UI joins them with the requests service's)
+      security: [{ adminToken: [] }]
+      responses:
+        "200":
+          description: Metrics
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FeedbackMetrics" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+components:
+  securitySchemes:
+    adminToken:
+      type: http
+      scheme: bearer
+      description: Issued by the requests service at POST /admin/session (claim av_manager).
+    serviceToken:
+      type: http
+      scheme: bearer
+      description: Issued per call by the requests service (claim avdesk_service), valid 5 minutes.
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid admin token
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Health:
+      type: object
+      required: [status, db, version]
+      properties:
+        status: { type: string, enum: [ok, unavailable] }
+        db: { type: string, enum: [ok, unavailable] }
+        version: { type: string, description: Git commit SHA of the image }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+
+    State:
+      type: string
+      enum: [open, used, expired, not_found]
+
+    InviteState:
+      type: object
+      required: [state]
+      properties:
+        state: { $ref: "#/components/schemas/State" }
+
+    Outcome:
+      type: string
+      enum: [approved, minor_tweaks, major_changes]
+
+    DeliveryInput:
+      type: object
+      required: [work, recipients]
+      properties:
+        work:
+          type: object
+          description: A copy of the delivered request; this service never reads the requests database.
+          required: [request_id, public_code, title, type_label, diretoria, delivery_url, needed_by, delivered_at]
+          properties:
+            request_id: { type: integer }
+            public_code: { type: string }
+            title: { type: string }
+            type_label: { type: string }
+            diretoria: { type: string }
+            delivery_url: { type: string }
+            needed_by: { type: string, format: date }
+            delivered_at: { type: string, format: date-time }
+        recipients:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [label, is_requester]
+            properties:
+              label: { type: string }
+              is_requester: { type: boolean }
+
+    AdminInvite:
+      type: object
+      required: [token, recipient_label, is_requester, expires_at, verdict_pending]
+      properties:
+        token: { type: string }
+        recipient_label: { type: string }
+        is_requester: { type: boolean }
+        expires_at: { type: string, format: date-time }
+        used_at: { type: string, format: date-time, nullable: true }
+        verdict_pending: { type: boolean, description: "Answered, but the requests service has not received the verdict yet" }
+
+    Choice:
+      type: object
+      required: [key, label]
+      properties:
+        key: { type: string }
+        label: { type: string }
+
+    PublicInvite:
+      type: object
+      required: [state]
+      properties:
+        state: { $ref: "#/components/schemas/State" }
+        dimensions:
+          type: array
+          items: { $ref: "#/components/schemas/Choice" }
+        outcomes:
+          type: array
+          items:
+            type: object
+            required: [value, label]
+            properties:
+              value: { $ref: "#/components/schemas/Outcome" }
+              label: { type: string }
+        invite:
+          type: object
+          required: [public_code, title, type_label, delivery_url, recipient_label, expires_at]
+          properties:
+            public_code: { type: string }
+            title: { type: string }
+            type_label: { type: string }
+            delivery_url: { type: string }
+            recipient_label: { type: string }
+            expires_at: { type: string, format: date-time }
+
+    AnswerInput:
+      type: object
+      description: Ratings are 1-5, as numbers or numeric strings.
+      properties:
+        rating_tone: { oneOf: [{ type: integer }, { type: string }] }
+        rating_quality: { oneOf: [{ type: integer }, { type: string }] }
+        rating_process: { oneOf: [{ type: integer }, { type: string }] }
+        rating_usefulness: { oneOf: [{ type: integer }, { type: string }] }
+        outcome: { $ref: "#/components/schemas/Outcome" }
+        comment: { type: string }
+
+    FeedbackMetrics:
+      type: object
+      required: [outcome_counts, dimensions, ratings_by_type, ratings_by_diretoria, requester_outcomes]
+      properties:
+        response_rate: { type: number, nullable: true }
+        outcome_counts:
+          type: array
+          items:
+            type: object
+            required: [outcome, label, count]
+            properties:
+              outcome: { $ref: "#/components/schemas/Outcome" }
+              label: { type: string }
+              count: { type: integer }
+        dimensions:
+          type: array
+          items: { $ref: "#/components/schemas/Choice" }
+        ratings_by_type:
+          type: object
+          description: Average rating per dimension, per request type label
+          additionalProperties:
+            type: object
+            additionalProperties: { type: number }
+        ratings_by_diretoria:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: { type: number }
+        requester_outcomes:
+          type: object
+          description: The requester's outcome per request id, for the UI to join with briefing scores
+          additionalProperties: { $ref: "#/components/schemas/Outcome" }

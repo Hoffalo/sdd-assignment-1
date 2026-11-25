@@ -599,7 +599,7 @@ components:
             tracking_token: { type: string }
             briefing_score: { type: integer }
             task_url: { type: string, nullable: true }
-            invites_pending: { type: boolean, description: Delivered, but the feedback service has not created the invites yet }
+            invites_pending: { type: boolean, description: "Delivered, but the feedback service has not created the invites yet" }
             accepted_at: { type: string, format: date-time, nullable: true }
             delivered_at: { type: string, format: date-time, nullable: true }
             created_at: { type: string, format: date-time }
