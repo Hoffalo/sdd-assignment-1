@@ -6,7 +6,7 @@
 # same settings changes nothing, so the script can be re-run after a failure.
 #
 # Every resource is pay-per-use (ADR-8): Container Apps Consumption scaling to
-# zero, Azure SQL serverless on the free offer (auto-pause, never billed), a
+# zero, Azure SQL serverless (billed per second while active, auto-pause after 60 min), a
 # Storage static website, and a managed identity (free). Images live on GHCR.
 #
 # Passwords are generated here and written only to infra/.secrets.local
@@ -18,10 +18,10 @@ export MSYS_NO_PATHCONV=1
 
 AZ=${AZ:-az}
 PREFIX=lhoffmann
-LOCATION=spaincentral        # one of the five regions this subscription allows
+LOCATION=belgiumcentral      # allowed for this subscription and accepting new SQL servers (infra/README.md)
 REPO=Hoffalo/sdd-assignment-1
 RG=rg-$PREFIX
-SQL_SERVER=$PREFIX-sql
+SQL_SERVER=$PREFIX-sql3        # infra/README.md: failed attempts elsewhere still hold -sql and -sql2
 SQL_ADMIN=avdeskadmin
 ENVIRONMENT=$PREFIX-env
 STORAGE=${PREFIX}ui
@@ -67,7 +67,9 @@ fi
 RG_ID=$($AZ group show -n "$RG" --query id -o tsv)
 
 step "Managed identity $PREFIX-github, trusted only for pushes to main of $REPO"
-$AZ identity create -g "$RG" -n "$PREFIX-github" -l "$LOCATION" --output none
+if ! $AZ identity show -g "$RG" -n "$PREFIX-github" --output none 2>/dev/null; then
+  $AZ identity create -g "$RG" -n "$PREFIX-github" -l "$LOCATION" --output none
+fi
 CLIENT_ID=$($AZ identity show -g "$RG" -n "$PREFIX-github" --query clientId -o tsv)
 PRINCIPAL_ID=$($AZ identity show -g "$RG" -n "$PREFIX-github" --query principalId -o tsv)
 $AZ identity federated-credential create -g "$RG" --identity-name "$PREFIX-github" -n github-main \
@@ -81,7 +83,7 @@ if [ -z "$($AZ role assignment list --assignee "$PRINCIPAL_ID" --role Contributo
     --role Contributor --scope "$RG_ID" --output none
 fi
 
-step "SQL server $SQL_SERVER and one serverless database per service (free offer)"
+step "SQL server $SQL_SERVER and one serverless database per service (auto-pause after 60 min)"
 if $AZ sql server show -g "$RG" -n "$SQL_SERVER" --output none 2>/dev/null; then
   # Re-run: make the admin password match the one in the secrets file.
   $AZ sql server update -g "$RG" -n "$SQL_SERVER" --admin-password "$SQL_ADMIN_PASSWORD" --output none
@@ -97,7 +99,7 @@ for service in "${SERVICES[@]}"; do
   $AZ sql db create -g "$RG" -s "$SQL_SERVER" -n "$PREFIX-$service-db" \
     --edition GeneralPurpose --family Gen5 --compute-model Serverless \
     --min-capacity 0.5 --capacity 1 --backup-storage-redundancy Local \
-    --use-free-limit true --free-limit-exhaustion-behavior AutoPause --output none
+    --auto-pause-delay 60 --output none
 done
 
 step "Container Apps environment $ENVIRONMENT (creates its Log Analytics workspace)"
