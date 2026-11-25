@@ -47,7 +47,12 @@ for provider in Microsoft.App Microsoft.OperationalInsights Microsoft.Sql Micros
 done
 
 step "Resource group $RG in $LOCATION"
-$AZ group create -n "$RG" -l "$LOCATION" --output none
+# The group may already exist from the course's setup guide, possibly in
+# another location; a group's location only holds its metadata, so it is
+# reused as it is and every resource below still goes to $LOCATION.
+if [ "$($AZ group exists -n "$RG")" != "true" ]; then
+  $AZ group create -n "$RG" -l "$LOCATION" --output none
+fi
 RG_ID=$($AZ group show -n "$RG" --query id -o tsv)
 
 step "Managed identity $PREFIX-github, trusted only for pushes to main of $REPO"
