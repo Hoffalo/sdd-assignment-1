@@ -1,0 +1,13 @@
+# Runtime dependencies only: this is what the image installs.
+# Every package is pinned, including Flask's own dependencies, so the image
+# built in CI is the image that was tested, whatever is released meanwhile.
+flask==3.1.3
+waitress==3.0.2
+pymssql==2.4.6
+# Installed by flask:
+werkzeug==3.1.9
+jinja2==3.1.6
+markupsafe==3.0.4
+itsdangerous==2.2.0
+click==8.5.0
+blinker==1.9.0

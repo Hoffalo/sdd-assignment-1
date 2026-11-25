@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=./system.schema.json
+student: lhoffmann
+prefix: lhoffmann
+# The z50 zone was assigned by Azure when static website hosting was enabled
+# (infra/setup.sh prints it).
+public_url: https://lhoffmannui.z50.web.core.windows.net
+ui:
+  path: ui
+  storage_account: lhoffmannui
+  calls: [requests, feedback]
+azure:
+  resource_group: rg-lhoffmann
+  container_apps_environment: lhoffmann-env
+  sql_server: lhoffmann-sql3
+  registry: ghcr.io/hoffalo
+
+services:
+  requests:
+    description: Video requests from briefing to delivery, the AV manager's inbox and request metrics.
+    path: services/requests
+    openapi: services/requests/openapi.yaml
+    port_default: 8000
+    health: /health
+    migrations: services/requests/migrations
+    env:
+      PORT: { default: 8000, description: Port the service listens on }
+      DATABASE_URL: { secret: true, description: "mssql://user:password@host:port/database of the requests database, with the requests login" }
+      GIT_SHA: { default: dev, description: Commit SHA reported as version by /health; baked into the image by the pipeline }
+      ADMIN_PASSWORD: { secret: true, description: The AV manager's password for POST /admin/session }
+      ADMIN_TOKEN_SECRET: { secret: true, description: Key that signs admin and service tokens; shared with the feedback service }
+      ADMIN_TOKEN_TTL_S: { default: 43200, description: Lifetime of an admin token in seconds (12 hours) }
+      CORS_ORIGIN: { default: "http://localhost:8080", description: The only browser origin allowed to call the API (the UI) }
+      FEEDBACK_URL: { default: "", description: "Base URL of the feedback service (compose: http://feedback:8000). Empty means not configured: deliveries keep their invites pending" }
+      WORKLOAD_WARN_THRESHOLD: { default: 3, description: Open requests at which an analyst is shown as overloaded }
+      C_LEVEL_APPROVAL_BUFFER_DAYS: { default: 3, description: Extra lead days when C-Level approval is needed }
+      CLICKUP_API_TOKEN: { secret: true, description: "Optional ClickUp token; when unset (empty) no task is created on acceptance" }
+      CLICKUP_LIST_ID: { default: "", description: ClickUp list that receives accepted requests; empty disables ClickUp }
+    calls:
+      - service: feedback
+        url_env: FEEDBACK_URL
+        endpoints: ["POST /invites"]
+        timeout_s: 10
+        on_failure: The delivery still succeeds; the request is flagged invites_pending and the admin page shows "Os links de avaliação ainda não foram criados" with a "Criar links agora" retry button.
+    azure:
+      container_app: lhoffmann-requests
+      sql_database: lhoffmann-requests-db
+
+  feedback:
+    description: Single-use feedback invites after delivery, the answers, and feedback metrics.
+    path: services/feedback
+    openapi: services/feedback/openapi.yaml
+    port_default: 8000
+    health: /health
+    migrations: services/feedback/migrations
+    env:
+      PORT: { default: 8000, description: Port the service listens on }
+      DATABASE_URL: { secret: true, description: "mssql://user:password@host:port/database of the feedback database, with the feedback login" }
+      GIT_SHA: { default: dev, description: Commit SHA reported as version by /health; baked into the image by the pipeline }
+      ADMIN_TOKEN_SECRET: { secret: true, description: Key that verifies admin tokens and signs service tokens; shared with the requests service }
+      FEEDBACK_TTL_DAYS: { default: 30, description: Days an invite stays open }
+      CORS_ORIGIN: { default: "http://localhost:8080", description: The only browser origin allowed to call the API (the UI) }
+      REQUESTS_URL: { default: "", description: "Base URL of the requests service (compose: http://requests:8000). Empty means not configured: verdicts stay pending" }
+    calls:
+      - service: requests
+        url_env: REQUESTS_URL
+        endpoints: ["POST /requests/{request_id}/verdict"]
+        timeout_s: 10
+        on_failure: The requester's answer is still stored and they see the thank-you page; the verdict is flagged verdict_pending and the admin page offers "Reenviar veredito".
+    azure:
+      container_app: lhoffmann-feedback
+      sql_database: lhoffmann-feedback-db
