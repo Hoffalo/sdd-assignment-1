@@ -1,0 +1,4 @@
+# Tools the pipeline runs on top of each service's own requirements-dev.txt.
+ruff==0.17.6
+check-jsonschema==0.39.0
+openapi-spec-validator==0.9.0

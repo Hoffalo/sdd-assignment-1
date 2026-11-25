@@ -1,0 +1,28 @@
+name: SQL Server for tests
+description: >-
+  Starts a throwaway SQL Server 2022 container and waits until it accepts
+  logins. The sa password is generated for this run and masked in the logs,
+  so no password is written in the workflow. CI never touches Azure SQL.
+outputs:
+  url:
+    description: mssql:// URL for TEST_SQLSERVER_URL
+    value: ${{ steps.start.outputs.url }}
+runs:
+  using: composite
+  steps:
+    - id: start
+      shell: bash
+      run: |
+        password="Ci_$(openssl rand -hex 16)"
+        echo "::add-mask::$password"
+        docker run -d --name ci-sql -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD="$password" -p 1433:1433 \
+          mcr.microsoft.com/mssql/server:2022-latest
+        for _ in $(seq 1 60); do
+          if docker exec ci-sql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$password" -Q "SELECT 1" -b >/dev/null 2>&1; then
+            echo "url=mssql://sa:$password@localhost:1433/master" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          sleep 2
+        done
+        docker logs ci-sql
+        exit 1

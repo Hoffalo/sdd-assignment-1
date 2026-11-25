@@ -1,0 +1,211 @@
+# CI on every push and pull request; CD on push to main only.
+#
+# One workflow, not two: the deploy jobs `need` every CI job, so a deploy
+# can only ever run for a commit whose own CI passed in the same run. A
+# separate CD workflow triggered by workflow_run would have to re-check that.
+name: pipeline
+
+on:
+  push:
+  pull_request:
+
+# A newer push to the same branch makes the older run pointless; on main,
+# never cancel a deploy halfway, so main runs queue instead.
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"
+  REGISTRY: ghcr.io/hoffalo
+  RESOURCE_GROUP: rg-lhoffmann
+  STORAGE_ACCOUNT: lhoffmannui
+
+jobs:
+  # --- CI -------------------------------------------------------------------
+
+  specs:
+    name: Validate system.yaml and OpenAPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install -r .github/requirements-ci.txt
+      - name: system.yaml against system.schema.json
+        run: check-jsonschema --schemafile system.schema.json system.yaml
+      - name: Each OpenAPI document against the OpenAPI specification
+        run: openapi-spec-validator services/requests/openapi.yaml services/feedback/openapi.yaml
+
+  test:
+    name: Lint and test ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [requests, feedback]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/sql-server
+        id: sql
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: services/${{ matrix.service }}/requirements*.txt
+      - run: pip install -r services/${{ matrix.service }}/requirements-dev.txt -r .github/requirements-ci.txt
+      - name: Lint
+        run: ruff check services/${{ matrix.service }}
+      - name: Unit and integration tests, coverage gate 70%
+        working-directory: services/${{ matrix.service }}
+        env:
+          TEST_SQLSERVER_URL: ${{ steps.sql.outputs.url }}
+        run: >-
+          python -m pytest
+          --cov=avdesk_${{ matrix.service }} --cov-report=term-missing --cov-fail-under=70
+
+  cross-seam:
+    name: Both services together
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/sql-server
+        id: sql
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: services/*/requirements*.txt
+      - run: pip install -r services/requests/requirements-dev.txt -r services/feedback/requirements-dev.txt
+      - name: Cross-seam journeys over real HTTP
+        env:
+          TEST_SQLSERVER_URL: ${{ steps.sql.outputs.url }}
+        run: python -m pytest
+
+  build:
+    name: Build ${{ matrix.service }} image
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [requests, feedback]
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker build
+        run: >-
+          docker build --build-arg GIT_SHA=${{ github.sha }}
+          -t avdesk-${{ matrix.service }}:${{ github.sha }} services/${{ matrix.service }}
+
+  # --- CD (push to main only) -----------------------------------------------
+
+  publish:
+    name: Push ${{ matrix.service }} image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [specs, test, cross-seam, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [requests, feedback]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to GHCR with the run's own token
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Build and push, tagged with the commit SHA
+        run: |
+          image="$REGISTRY/avdesk-${{ matrix.service }}"
+          docker build --build-arg GIT_SHA=${{ github.sha }} -t "$image:${{ github.sha }}" -t "$image:latest" \
+            services/${{ matrix.service }}
+          docker push "$image:${{ github.sha }}"
+          docker push "$image:latest"
+
+  deploy:
+    name: Deploy to Azure
+    needs: [publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # OIDC: GitHub vouches for this run; no Azure password exists
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sign in as the lhoffmann-github managed identity
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Look up the public addresses
+        id: urls
+        run: |
+          fqdn() { az containerapp show -g "$RESOURCE_GROUP" -n "$1" --query properties.configuration.ingress.fqdn -o tsv; }
+          echo "requests=https://$(fqdn lhoffmann-requests)" >> "$GITHUB_OUTPUT"
+          echo "feedback=https://$(fqdn lhoffmann-feedback)" >> "$GITHUB_OUTPUT"
+          web=$(az storage account show -g "$RESOURCE_GROUP" -n "$STORAGE_ACCOUNT" --query primaryEndpoints.web -o tsv)
+          echo "ui=${web%/}" >> "$GITHUB_OUTPUT"
+
+      # Secrets go into Container Apps secrets and reach the process as
+      # secretref env vars, never as plain values in the app's definition.
+      - name: Deploy the requests service
+        env:
+          DATABASE_URL: ${{ secrets.REQUESTS_DATABASE_URL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_TOKEN_SECRET: ${{ secrets.ADMIN_TOKEN_SECRET }}
+        run: |
+          app=lhoffmann-requests
+          az containerapp secret set -g "$RESOURCE_GROUP" -n "$app" --secrets \
+            database-url="$DATABASE_URL" admin-password="$ADMIN_PASSWORD" admin-token-secret="$ADMIN_TOKEN_SECRET" \
+            --output none
+          az containerapp update -g "$RESOURCE_GROUP" -n "$app" \
+            --image "$REGISTRY/avdesk-requests:${{ github.sha }}" \
+            --min-replicas 0 --max-replicas 1 \
+            --set-env-vars DATABASE_URL=secretref:database-url ADMIN_PASSWORD=secretref:admin-password \
+              ADMIN_TOKEN_SECRET=secretref:admin-token-secret \
+              CORS_ORIGIN="${{ steps.urls.outputs.ui }}" FEEDBACK_URL="${{ steps.urls.outputs.feedback }}" \
+            --output none
+
+      - name: Deploy the feedback service
+        env:
+          DATABASE_URL: ${{ secrets.FEEDBACK_DATABASE_URL }}
+          ADMIN_TOKEN_SECRET: ${{ secrets.ADMIN_TOKEN_SECRET }}
+        run: |
+          app=lhoffmann-feedback
+          az containerapp secret set -g "$RESOURCE_GROUP" -n "$app" --secrets \
+            database-url="$DATABASE_URL" admin-token-secret="$ADMIN_TOKEN_SECRET" --output none
+          az containerapp update -g "$RESOURCE_GROUP" -n "$app" \
+            --image "$REGISTRY/avdesk-feedback:${{ github.sha }}" \
+            --min-replicas 0 --max-replicas 1 \
+            --set-env-vars DATABASE_URL=secretref:database-url ADMIN_TOKEN_SECRET=secretref:admin-token-secret \
+              CORS_ORIGIN="${{ steps.urls.outputs.ui }}" REQUESTS_URL="${{ steps.urls.outputs.requests }}" \
+            --output none
+
+      - name: Upload the UI with the services' URLs as its configuration
+        run: |
+          cat > ui/config.js <<EOF
+          // Written by the pipeline for commit ${{ github.sha }}.
+          window.AVDESK_CONFIG = {
+            requestsUrl: "${{ steps.urls.outputs.requests }}",
+            feedbackUrl: "${{ steps.urls.outputs.feedback }}",
+          };
+          EOF
+          az storage blob upload-batch --account-name "$STORAGE_ACCOUNT" --auth-mode key \
+            --destination '$web' --source ui --overwrite --output none
+
+      # A cold start may find the database paused; resuming takes about a
+      # minute and the app retries for about 70 s, so allow 5 minutes.
+      - name: Both services answer /health with 200 and this commit
+        run: |
+          for url in "${{ steps.urls.outputs.requests }}" "${{ steps.urls.outputs.feedback }}"; do
+            deadline=$((SECONDS + 300))
+            until body=$(curl -fsS --max-time 60 "$url/health") && echo "$body" | grep -q "${{ github.sha }}"; do
+              if [ $SECONDS -ge $deadline ]; then echo "::error::$url/health did not report ${{ github.sha }}"; exit 1; fi
+              echo "waiting for $url ..."; sleep 15
+            done
+            echo "$url/health -> $body"
+          done
