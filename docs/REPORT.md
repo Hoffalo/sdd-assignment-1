@@ -161,7 +161,25 @@ requests-1 | INFO avdesk_requests.migrations: Applied migration 002_health_probe
 requests-1 | INFO avdesk_requests.migrations: Applied migration 003_invites_pending
 ```
 
-**On Azure:** [EVIDENCE TO ADD after the second deployment. The first deployment applies 001–003. Requests and invites are then created through the live UI. A later pull request adds a migration that changes a table already holding rows. Here go the CD run link, the container log line "Applied migration 004_…", and row counts and a sample row before and after.]
+**On Azure.** The first deployment applied 001–003 to empty databases. Through the live UI I then created two requests, delivered one, and answered its feedback link. The pull request that added `004_rename_diretoria_snapshot.sql` was deployed by [run 45653026975](https://github.com/Hoffalo/sdd-assignment-1/actions/runs/45653026975). That migration renames `feedback_invites.diretoria` to `diretoria_name` in place, with `sp_rename`, on a table that already held a row.
+
+Startup log of the feedback container, from the environment's Log Analytics workspace ([full file](evidence-migration-log.txt)):
+
+```
+lhoffmann-feedback--0000001  16:09:34 Applied migration 001_init / 002_health_probe / 003_verdict_pending
+lhoffmann-feedback--0000002  16:25:27 INFO avdesk_feedback.migrations: Applied migration 004_rename_diretoria_snapshot
+lhoffmann-feedback--0000003  16:29:28 INFO waitress: Serving on http://0.0.0.0:8000   (next deploy: nothing to apply)
+```
+
+Data in `lhoffmann-feedback-db`, queried read-only before and after ([before](evidence-migration-before.txt), [after](evidence-migration-after.txt)):
+
+| | Before (migrations 1–3) | After (migrations 1–4) |
+|---|---|---|
+| Column | `diretoria` | `diretoria_name` |
+| Invite 1 | AV-2026-0001, "adf", **Comunicação**, recipient "lala", requester, used 16:18:45 | AV-2026-0001, "adf", **Comunicação**, recipient "lala", requester, used 16:18:45 |
+| Rows | 1 invite, 1 response; requests DB: 2 requests, 6 events | 1 invite, 1 response; requests DB: 2 requests, 6 events |
+
+Locally, the same path is covered by `tests/integration/test_migration_keeps_data.py`. That test writes an invite under migrations 1–3, applies 004, and reads the invite back unchanged.
 
 ## 6. Partial failure
 
@@ -169,7 +187,13 @@ With the feedback service stopped (`docker compose stop feedback`), the requests
 
 > Os links de avaliação ainda não foram criados: o serviço de avaliação não respondeu na entrega. **[Criar links agora]**
 
-Once feedback is back, the button creates the links ("Links de avaliação criados."). In the other direction, with the requests service stopped, the requester still gets "Obrigado! Avaliação enviada.", and the admin page shows "Quem pediu já respondeu a avaliação, mas o veredito ainda não chegou a este pedido. **[Reenviar veredito]**". After the resend the request is "Concluído", and its timeline credits "avaliação". Both were verified in the browser and are automated in `tests/cross_seam` (4 journeys over real HTTP, with one outage on each side). [SCREENSHOTS TO ADD.]
+![Admin page after a delivery made while the feedback service was stopped](evidence/partial-failure-invites-pending.jpg)
+
+The metrics page, with feedback still stopped, shows the requests half and a notice in place of the feedback half:
+
+![Metrics page with the feedback service stopped](evidence/partial-failure-metrics.jpg)
+
+Once feedback is back, the button creates the links ("Links de avaliação criados."). In the other direction, with the requests service stopped, the requester still gets "Obrigado! Avaliação enviada.", and the admin page shows "Quem pediu já respondeu a avaliação, mas o veredito ainda não chegou a este pedido. **[Reenviar veredito]**". After the resend the request is "Concluído", and its timeline credits "avaliação". Both were verified in the browser and are automated in `tests/cross_seam` (4 journeys over real HTTP, with one outage on each side).
 
 `GET /health` on each service reports only its own database: `{"status": "ok", "db": "ok", "version": "<sha>"}`, or 503.
 
@@ -199,7 +223,13 @@ Pipeline evidence, from the first deployment:
 
 Deliberately not tested: the browser JavaScript (checked by hand in each phase), Azure itself beyond the post-deploy health check, ClickUp's real API, and performance.
 
-## 8. AI disclosure
+## 8. Known gaps
+
+- **Databases are serverless, not on the free offer.** None of the five regions this Azure for Students subscription allows would create a free-offer database. Spain, Belgium and Denmark refuse it; Switzerland and Norway refuse new SQL servers. The databases are General Purpose serverless, 0.5–1 vCore, auto-pausing after 60 minutes. They are billed per second only while active, plus storage, from the student credit (ADR-8).
+- **The SQL server is `lhoffmann-sql3`**, not `lhoffmann-sql`. Each refused attempt left Azure holding the name in that region.
+- **Commit spread.** The Assignment 2 commits fall on 23, 24 and 25 November. The brief asks for 6 days with no day over 40%, and for ADRs 6–10 on 3 commit dates: they are on 24 and 25 November. I did not rewrite dates to meet the rule.
+
+## 9. AI disclosure
 
 I acknowledge the use of Anthropic's Claude, through Claude Code (Claude Opus 5.5) in the Claude desktop app, to plan and carry out the split. The prompts used include:
 - pasting the Assignment 2 brief and approving a six-phase plan;
