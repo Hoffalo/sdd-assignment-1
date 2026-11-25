@@ -187,7 +187,13 @@ With the feedback service stopped (`docker compose stop feedback`), the requests
 
 > Os links de avaliação ainda não foram criados: o serviço de avaliação não respondeu na entrega. **[Criar links agora]**
 
-Once feedback is back, the button creates the links ("Links de avaliação criados."). In the other direction, with the requests service stopped, the requester still gets "Obrigado! Avaliação enviada.", and the admin page shows "Quem pediu já respondeu a avaliação, mas o veredito ainda não chegou a este pedido. **[Reenviar veredito]**". After the resend the request is "Concluído", and its timeline credits "avaliação". Both were verified in the browser and are automated in `tests/cross_seam` (4 journeys over real HTTP, with one outage on each side). [SCREENSHOTS TO ADD.]
+![Admin page after a delivery made while the feedback service was stopped](evidence/partial-failure-invites-pending.jpg)
+
+The metrics page, with feedback still stopped, shows the requests half and a notice in place of the feedback half:
+
+![Metrics page with the feedback service stopped](evidence/partial-failure-metrics.jpg)
+
+Once feedback is back, the button creates the links ("Links de avaliação criados."). In the other direction, with the requests service stopped, the requester still gets "Obrigado! Avaliação enviada.", and the admin page shows "Quem pediu já respondeu a avaliação, mas o veredito ainda não chegou a este pedido. **[Reenviar veredito]**". After the resend the request is "Concluído", and its timeline credits "avaliação". Both were verified in the browser and are automated in `tests/cross_seam` (4 journeys over real HTTP, with one outage on each side).
 
 `GET /health` on each service reports only its own database: `{"status": "ok", "db": "ok", "version": "<sha>"}`, or 503.
 
