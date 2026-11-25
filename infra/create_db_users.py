@@ -20,7 +20,7 @@ from pathlib import Path
 import pymssql
 
 PREFIX = "lhoffmann"
-SERVER = f"{PREFIX}-sql.database.windows.net"
+SERVER = f"{PREFIX}-sql2.database.windows.net"
 SQL_ADMIN = "avdeskadmin"
 SECRETS_FILE = Path(__file__).with_name(".secrets.local")
 SERVICES = {"requests": "REQUESTS_DB_PASSWORD", "feedback": "FEEDBACK_DB_PASSWORD"}

@@ -4,7 +4,7 @@ After this setup, **only the pipeline changes Azure.** [`.github/workflows/pipel
 
 ## What exists on Azure
 
-Everything is in `rg-lhoffmann`, in `spaincentral` (one of the five regions this Azure for Students subscription allows).
+Everything is in `rg-lhoffmann`, in `norwayeast`, one of the five regions this Azure for Students subscription allows. `spaincentral` was tried first: it refuses free-offer SQL databases, and `switzerlandnorth` refused new SQL servers.
 
 | Resource | Name | Cost model |
 |---|---|---|
@@ -12,11 +12,13 @@ Everything is in `rg-lhoffmann`, in `spaincentral` (one of the five regions this
 | Container App | `lhoffmann-requests` | Per second while a replica runs; 0 to 1 replica |
 | Container App | `lhoffmann-feedback` | Same |
 | Log Analytics workspace | created with the environment | Pay per GB; free up to 5 GB a month |
-| Azure SQL logical server | `lhoffmann-sql` | Free (no compute of its own) |
+| Azure SQL logical server | `lhoffmann-sql2` | Free (no compute of its own) |
 | SQL database, serverless | `lhoffmann-requests-db` | Free offer: auto-pauses after 60 min, 32 GB, never billed |
 | SQL database, serverless | `lhoffmann-feedback-db` | Same |
 | Storage account, static website | `lhoffmannui` | Pay per GB stored and served (cents) |
 | User-assigned managed identity | `lhoffmann-github` | Free |
+
+The SQL server is `lhoffmann-sql2`, not `lhoffmann-sql` as the brief's naming suggests. The attempt in `switzerlandnorth` failed but left Azure holding the name `lhoffmann-sql` in that region, so it cannot be created elsewhere. Deleting it did not release the name.
 
 Images are on GHCR (`ghcr.io/hoffalo/avdesk-requests`, `ghcr.io/hoffalo/avdesk-feedback`), which is free for public packages.
 
@@ -32,10 +34,10 @@ You need the Azure CLI signed in to the subscription (`az login`), Python with `
 
 2. **Create one login per database.** Allow your own IP on the SQL server for the duration:
    ```bash
-   az sql server firewall-rule create -g rg-lhoffmann -s lhoffmann-sql -n setup-my-ip \
+   az sql server firewall-rule create -g rg-lhoffmann -s lhoffmann-sql2 -n setup-my-ip \
      --start-ip-address <your-ip> --end-ip-address <your-ip>
    python infra/create_db_users.py
-   az sql server firewall-rule delete -g rg-lhoffmann -s lhoffmann-sql -n setup-my-ip
+   az sql server firewall-rule delete -g rg-lhoffmann -s lhoffmann-sql2 -n setup-my-ip
    ```
 
 3. **Give the pipeline its secrets.** In GitHub, under Settings → Secrets and variables → Actions, add the seven values listed at the bottom of `infra/.secrets.local`. Choose `ADMIN_PASSWORD` yourself.
