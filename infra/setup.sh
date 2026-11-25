@@ -72,9 +72,14 @@ if ! $AZ identity show -g "$RG" -n "$PREFIX-github" --output none 2>/dev/null; t
 fi
 CLIENT_ID=$($AZ identity show -g "$RG" -n "$PREFIX-github" --query clientId -o tsv)
 PRINCIPAL_ID=$($AZ identity show -g "$RG" -n "$PREFIX-github" --query principalId -o tsv)
-$AZ identity federated-credential create -g "$RG" --identity-name "$PREFIX-github" -n github-main \
+# GitHub's tokens name the owner and repository with their immutable ids
+# (owner@id/repo@id), so a renamed or re-created repository with the same name
+# cannot inherit this trust. The ids come from GitHub's public API.
+OWNER_ID=$(curl -fsS "https://api.github.com/users/${REPO%%/*}" | python -c "import sys, json; print(json.load(sys.stdin)['id'])")
+REPO_ID=$(curl -fsS "https://api.github.com/repos/$REPO" | python -c "import sys, json; print(json.load(sys.stdin)['id'])")
+$AZ identity federated-credential create -g "$RG" --identity-name "$PREFIX-github" -n github-main-ids \
   --issuer https://token.actions.githubusercontent.com \
-  --subject "repo:$REPO:ref:refs/heads/main" \
+  --subject "repo:${REPO%%/*}@$OWNER_ID/${REPO##*/}@$REPO_ID:ref:refs/heads/main" \
   --audiences api://AzureADTokenExchange --output none
 # Contributor on this resource group only: the pipeline can update the apps
 # and upload the UI, and can touch nothing else in the subscription.

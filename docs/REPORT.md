@@ -189,7 +189,13 @@ Deploy jobs run only on main and only after all four passed in the same run (ADR
 | feedback (unit + integration) | 112 | 97% |
 | cross-seam | 4 | — |
 
-Pipeline evidence: [LINK TO ADD: successful CD run on main], [LINK TO ADD: a failed run, its cause and the fix].
+Pipeline evidence, from the first deployment:
+
+| Run | Result | Cause | Fix |
+|---|---|---|---|
+| [45648873282](https://github.com/Hoffalo/sdd-assignment-1/actions/runs/45648873282) (main, `edb3ca8`) | Failed at "Push requests image" | GHCR refused the first push with `permission_denied: write_package`: the run's token could not create a package that was not linked to the repository | Repository workflow permissions set to read and write; images labelled `org.opencontainers.image.source` so each new package links to this repository ([PR from `fix-ghcr-publish`](https://github.com/Hoffalo/sdd-assignment-1/actions/runs/45649583468)) |
+| [45649940258](https://github.com/Hoffalo/sdd-assignment-1/actions/runs/45649940258), attempt 1 (main, `1b36f61`) | Images pushed; failed at "Sign in as the lhoffmann-github managed identity" | `AADSTS700213: No matching federated identity record`. GitHub's token subject is `repo:Hoffalo@19399718/sdd-assignment-1@1411924049:ref:refs/heads/main`, with owner and repository ids, while the federated credential trusted the older form without ids | Federated credential replaced with the exact id-based subject; `infra/setup.sh` now builds it |
+| [45649940258](https://github.com/Hoffalo/sdd-assignment-1/actions/runs/45649940258), attempt 2 | **Success** | — | Both Container Apps updated, UI uploaded, and both `/health` endpoints returned `{"db": "ok", "status": "ok", "version": "1b36f611d48a54d35f66edae5b64196299110512"}` |
 
 Deliberately not tested: the browser JavaScript (checked by hand in each phase), Azure itself beyond the post-deploy health check, ClickUp's real API, and performance.
 
