@@ -59,4 +59,4 @@ You need the Azure CLI signed in to the subscription (`az login`), Python with `
 
 ## Why the pipeline cannot do more
 
-The managed identity is federated for exactly one subject, `repo:Hoffalo/sdd-assignment-1:ref:refs/heads/main`. A pull request, a fork or another branch cannot get an Azure token at all. Its role is Contributor on `rg-lhoffmann` only, so even a compromised run cannot touch anything else in the subscription. No Azure password exists anywhere.
+The managed identity is federated for exactly one subject, `repo:Hoffalo@19399718/sdd-assignment-1@1411924049:ref:refs/heads/main`. GitHub writes the owner's and the repository's immutable ids into its tokens. The first deploy failed with `AADSTS700213: No matching federated identity record` because the trust was created for the older form without ids, and was fixed by trusting the exact subject GitHub presents. A pull request, a fork or another branch cannot get an Azure token at all. Its role is Contributor on `rg-lhoffmann` only, so even a compromised run cannot touch anything else in the subscription. No Azure password exists anywhere.
