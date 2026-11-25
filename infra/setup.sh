@@ -56,7 +56,7 @@ fi
 RG_ID=$($AZ group show -n "$RG" --query id -o tsv)
 
 step "Managed identity $PREFIX-github, trusted only for pushes to main of $REPO"
-$AZ identity create -g "$RG" -n "$PREFIX-github" --output none
+$AZ identity create -g "$RG" -n "$PREFIX-github" -l "$LOCATION" --output none
 CLIENT_ID=$($AZ identity show -g "$RG" -n "$PREFIX-github" --query clientId -o tsv)
 PRINCIPAL_ID=$($AZ identity show -g "$RG" -n "$PREFIX-github" --query principalId -o tsv)
 $AZ identity federated-credential create -g "$RG" --identity-name "$PREFIX-github" -n github-main \
