@@ -10,7 +10,7 @@ Before AV Desk, video requests arrived through scattered Slack threads: vague as
 - single-use feedback links on delivery;
 - a metrics page built from the answers.
 
-**Live:** https://lhoffmannui.z6.web.core.windows.net (static UI on Azure Storage, calling two Container Apps).
+**Live:** https://lhoffmannui.z50.web.core.windows.net (static UI on Azure Storage, calling two Container Apps).
 
 The UI is in Brazilian Portuguese; code and documentation are in English.
 

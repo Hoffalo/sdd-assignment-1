@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=./system.schema.json
 student: lhoffmann
 prefix: lhoffmann
-# The z<N> zone is assigned by Azure when static website hosting is enabled;
-# infra/setup.sh prints it, and it is copied here after the first setup.
-public_url: https://lhoffmannui.z6.web.core.windows.net
+# The z50 zone was assigned by Azure when static website hosting was enabled
+# (infra/setup.sh prints it).
+public_url: https://lhoffmannui.z50.web.core.windows.net
 ui:
   path: ui
   storage_account: lhoffmannui

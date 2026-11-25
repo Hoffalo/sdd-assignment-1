@@ -1,6 +1,6 @@
 # AV Desk: Assignment 2 report
 
-Split, ship and operate. Repository: https://github.com/Hoffalo/sdd-assignment-1. Live: https://lhoffmannui.z6.web.core.windows.net. The Assignment 1 report is kept as [REPORT_A1.md](REPORT_A1.md).
+Split, ship and operate. Repository: https://github.com/Hoffalo/sdd-assignment-1. Live: https://lhoffmannui.z50.web.core.windows.net. The Assignment 1 report is kept as [REPORT_A1.md](REPORT_A1.md).
 
 ## 1. What changed
 
