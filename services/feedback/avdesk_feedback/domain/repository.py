@@ -56,7 +56,8 @@ class FeedbackWriter(ABC):
 
 def _to_invite(row) -> FeedbackInvite:
     work = DeliveredWork(row["request_id"], row["public_code"], row["request_title"], row["type_label"],
-                         row["diretoria"], row["delivery_url"], row["needed_by"], from_db_time(row["delivered_at"]))
+                         row["diretoria_name"], row["delivery_url"], row["needed_by"],
+                         from_db_time(row["delivered_at"]))
     return FeedbackInvite(row["id"], row["token"], work, row["recipient_label"], row["is_requester"],
                           from_db_time(row["expires_at"]), from_db_time(row["used_at"]),
                           from_db_time(row["created_at"]), bool(row.get("verdict_pending")))
@@ -118,7 +119,7 @@ class SqlServerFeedbackRepository(FeedbackReader, FeedbackWriter):
             for invite in invites:
                 session.execute(
                     "INSERT INTO feedback_invites (token, request_id, public_code, request_title, type_label, "
-                    "diretoria, delivery_url, needed_by, delivered_at, recipient_label, is_requester, expires_at, "
+                    "diretoria_name, delivery_url, needed_by, delivered_at, recipient_label, is_requester, expires_at, "
                     "created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (invite.token, work.request_id, work.public_code, work.title, work.type_label, work.diretoria,
                      work.delivery_url, work.needed_by, to_db_time(work.delivered_at),
