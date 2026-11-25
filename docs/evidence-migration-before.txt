@@ -1,0 +1,23 @@
+=== before ===
+
+-- feedback: applied migrations
+version | name | applied_at
+1 | 001_init | 2026-11-25 16:09:34.546988
+2 | 002_health_probe | 2026-11-25 16:09:34.617340
+3 | 003_verdict_pending | 2026-11-25 16:09:34.670284
+
+-- feedback: columns of feedback_invites
+columns
+id, token, request_id, public_code, request_title, type_label, diretoria, delivery_url, needed_by, delivered_at, recipient_label, is_requester, expires_at, used_at, created_at
+
+-- feedback: invites (the rows the migration must keep)
+id | request_id | public_code | request_title | diretoria | recipient_label | is_requester | used_at
+1 | 1 | AV-2026-0001 | adf | Comunicação | lala | True | 2026-11-25 16:18:45.027000
+
+-- feedback: row counts
+invites | responses
+1 | 1
+
+-- requests: row counts
+requests | events
+2 | 6
